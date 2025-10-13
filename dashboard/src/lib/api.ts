@@ -79,6 +79,10 @@ export const orderAPI = {
   
   // Health check
   healthCheck: () => api.get('/health'),
+
+  // Toggle payment status
+  togglePaymentStatus: (id: string, receivedAmount: number) => 
+    api.patch(`/${id}/payment`, { receivedAmount }),
 };
 
 export default api;

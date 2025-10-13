@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { orderAPI } from '@/lib/api';
@@ -32,14 +31,27 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
   const [paymentReceived, setPaymentReceived] = useState(false);
   const [receivedAmount, setReceivedAmount] = useState(0);
   const [cancellationReason, setCancellationReason] = useState('');
+  const [orderId, setOrderId] = useState<string>('');
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<{[key: string]: any}>({});
 
   useEffect(() => {
-    fetchOrder();
-  }, [params.id]);
+    const initializeOrder = async () => {
+      const resolvedParams = await params;
+      setOrderId(resolvedParams.id);
+    };
+    initializeOrder();
+  }, [params]);
+
+  useEffect(() => {
+    if (orderId) {
+      fetchOrder();
+    }
+  }, [orderId]);
 
   const fetchOrder = async () => {
     try {
-      const response = await orderAPI.getOrderById(params.id);
+      const response = await orderAPI.getOrderById(orderId);
       setOrder(response.data.data);
     } catch (error) {
       console.error('Failed to fetch order:', error);
@@ -117,6 +129,69 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
     setPendingStatusChange(null);
   };
 
+  const handleTogglePayment = async (receivedAmount: number) => {
+    if (!order) return;
+
+    setUpdating(true);
+    try {
+      const response = await orderAPI.togglePaymentStatus(order._id, receivedAmount);
+      setOrder(response.data.data);
+      
+      toast({
+        title: "Payment Status Updated",
+        description: `Payment status updated successfully`,
+        variant: "default",
+      });
+    } catch (error: any) {
+      console.error('Failed to toggle payment status:', error);
+      toast({
+        title: "Update Failed",
+        description: error.response?.data?.message || 'Failed to update payment status',
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleEditField = (field: string, currentValue: any) => {
+    setEditingField(field);
+    setEditValues({ [field]: currentValue });
+  };
+
+  const handleSaveField = async (field: string) => {
+    if (!order) return;
+
+    setUpdating(true);
+    try {
+      const updateData = { [field]: editValues[field] };
+      const response = await orderAPI.updateOrder(order._id, updateData);
+      setOrder(response.data.data);
+      setEditingField(null);
+      setEditValues({});
+      
+      toast({
+        title: "Order Updated",
+        description: `${field} updated successfully`,
+        variant: "default",
+      });
+    } catch (error: any) {
+      console.error('Failed to update order:', error);
+      toast({
+        title: "Update Failed",
+        description: error.response?.data?.message || 'Failed to update order',
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingField(null);
+    setEditValues({});
+  };
+
   const handleDeleteOrder = async () => {
     if (!order) return;
 
@@ -189,13 +264,9 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
           </div>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={() => router.push(`/admin/orders/${order._id}/edit`)}>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
           <Button variant="destructive" onClick={handleDeleteOrder} disabled={updating}>
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete
+            Delete Order
           </Button>
         </div>
       </div>
@@ -215,21 +286,119 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Product Name</Label>
-                  <p className="text-lg font-medium text-black dark:text-white">{order.productName}</p>
+                  {editingField === 'productName' ? (
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Input
+                        value={editValues.productName || ''}
+                        onChange={(e) => setEditValues({...editValues, productName: e.target.value})}
+                        className="flex-1"
+                      />
+                      <Button size="sm" onClick={() => handleSaveField('productName')} disabled={updating}>
+                        Save
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <p className="text-lg font-medium text-black dark:text-white">{order.productName}</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditField('productName', order.productName)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Product ID</Label>
-                  <p className="text-lg font-medium text-black dark:text-white">{order.productId}</p>
+                  {editingField === 'productId' ? (
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Input
+                        value={editValues.productId || ''}
+                        onChange={(e) => setEditValues({...editValues, productId: e.target.value})}
+                        className="flex-1"
+                      />
+                      <Button size="sm" onClick={() => handleSaveField('productId')} disabled={updating}>
+                        Save
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <p className="text-lg font-medium text-black dark:text-white">{order.productId}</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditField('productId', order.productId)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Order Amount</Label>
-                  <p className="text-lg font-medium text-black dark:text-white">{formatPrice(order.amount)}</p>
+                  {editingField === 'amount' ? (
+                    <div className="flex items-center space-x-2 mt-1">
+                      <Input
+                        type="number"
+                        value={editValues.amount || ''}
+                        onChange={(e) => setEditValues({...editValues, amount: Number(e.target.value)})}
+                        className="flex-1"
+                      />
+                      <Button size="sm" onClick={() => handleSaveField('amount')} disabled={updating}>
+                        Save
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <p className="text-lg font-medium text-black dark:text-white">{formatPrice(order.amount)}</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditField('amount', order.amount)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Received Amount</Label>
                   <p className="text-lg font-medium text-green-600 dark:text-green-400">
                     {formatPrice(order.receivedAmount)}
                   </p>
+                  {(order.status === 'delivered' || order.status === 'cancelled') && (
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        onClick={() => handleTogglePayment(order.amount)}
+                        disabled={updating || order.receivedAmount === order.amount}
+                        size="sm"
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Mark Payment Received
+                      </Button>
+                      <Button
+                        onClick={() => handleTogglePayment(0)}
+                        disabled={updating || order.receivedAmount === 0}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Mark Payment Not Received
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Date of Departure</Label>
@@ -480,80 +649,82 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
       </div>
 
       {/* Payment Dialog */}
-      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {pendingStatusChange === 'delivered' ? 'Mark as Delivered' : 'Cancel Order'}
-            </DialogTitle>
-            <DialogDescription>
-              {pendingStatusChange === 'delivered' 
-                ? 'Please confirm if payment was received for this order.'
-                : 'Please provide details for cancelling this order.'
-              }
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="paymentReceived"
-                checked={paymentReceived}
-                onChange={(e) => setPaymentReceived(e.target.checked)}
-                className="rounded"
-              />
-              <Label htmlFor="paymentReceived">
-                Payment Received
-              </Label>
+      {showPaymentDialog && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-black dark:text-white">
+                {pendingStatusChange === 'delivered' ? 'Mark as Delivered' : 'Cancel Order'}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                {pendingStatusChange === 'delivered' 
+                  ? 'Please confirm if payment was received for this order.'
+                  : 'Please provide details for cancelling this order.'
+                }
+              </p>
             </div>
             
-            {paymentReceived && (
-              <div>
-                <Label htmlFor="receivedAmount">Received Amount</Label>
-                <Input
-                  id="receivedAmount"
-                  type="number"
-                  value={receivedAmount}
-                  onChange={(e) => setReceivedAmount(Number(e.target.value))}
-                  placeholder="Enter received amount"
-                  min="0"
-                  max={order?.amount || 0}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="paymentReceived"
+                  checked={paymentReceived}
+                  onChange={(e) => setPaymentReceived(e.target.checked)}
+                  className="rounded"
                 />
+                <Label htmlFor="paymentReceived">
+                  Payment Received
+                </Label>
               </div>
-            )}
+              
+              {paymentReceived && (
+                <div>
+                  <Label htmlFor="receivedAmount">Received Amount</Label>
+                  <Input
+                    id="receivedAmount"
+                    type="number"
+                    value={receivedAmount}
+                    onChange={(e) => setReceivedAmount(Number(e.target.value))}
+                    placeholder="Enter received amount"
+                    min="0"
+                    max={order?.amount || 0}
+                  />
+                </div>
+              )}
+              
+              {pendingStatusChange === 'cancelled' && (
+                <div>
+                  <Label htmlFor="cancellationReason">Cancellation Reason</Label>
+                  <Textarea
+                    id="cancellationReason"
+                    value={cancellationReason}
+                    onChange={(e) => setCancellationReason(e.target.value)}
+                    placeholder="Enter reason for cancellation"
+                    rows={3}
+                  />
+                </div>
+              )}
+            </div>
             
-            {pendingStatusChange === 'cancelled' && (
-              <div>
-                <Label htmlFor="cancellationReason">Cancellation Reason</Label>
-                <Textarea
-                  id="cancellationReason"
-                  value={cancellationReason}
-                  onChange={(e) => setCancellationReason(e.target.value)}
-                  placeholder="Enter reason for cancellation"
-                  rows={3}
-                />
-              </div>
-            )}
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowPaymentDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handlePaymentDialogSubmit}
+                disabled={updating}
+                className={pendingStatusChange === 'delivered' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+              >
+                {updating ? 'Updating...' : (pendingStatusChange === 'delivered' ? 'Mark as Delivered' : 'Cancel Order')}
+              </Button>
+            </div>
           </div>
-          
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowPaymentDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handlePaymentDialogSubmit}
-              disabled={updating}
-              className={pendingStatusChange === 'delivered' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
-            >
-              {updating ? 'Updating...' : (pendingStatusChange === 'delivered' ? 'Mark as Delivered' : 'Cancel Order')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }

@@ -297,6 +297,28 @@ class OrderController {
       });
     }
   }
+
+  // Toggle payment status for delivered/cancelled orders
+  static async togglePaymentStatus(req, res) {
+    try {
+      const sellerId = req.query.sellerId || 'demo_seller_123';
+      const { id } = req.params;
+      const { receivedAmount } = req.body;
+
+      const order = await OrderService.togglePaymentStatus(id, sellerId, receivedAmount);
+      
+      res.json({
+        success: true,
+        message: 'Payment status updated successfully',
+        data: order
+      });
+    } catch (error) {
+      res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
 }
 
 module.exports = OrderController;

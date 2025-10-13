@@ -53,6 +53,10 @@ router.patch('/:id/status',
   OrderController.updateOrderStatus
 );
 
+router.patch('/:id/payment',
+  OrderController.togglePaymentStatus
+);
+
 router.delete('/:id',
   OrderController.deleteOrder
 );

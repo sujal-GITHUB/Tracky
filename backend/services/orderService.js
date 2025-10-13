@@ -349,6 +349,29 @@ class OrderService {
       throw new Error(`Failed to bulk update orders: ${error.message}`);
     }
   }
+
+  // Toggle payment status for delivered/cancelled orders
+  static async togglePaymentStatus(orderId, sellerId, receivedAmount) {
+    try {
+      const order = await Order.findOne({
+        _id: orderId,
+        'sellerInfo.sellerId': sellerId,
+        status: { $in: ['delivered', 'cancelled'] }
+      });
+
+      if (!order) {
+        throw new Error('Order not found or not eligible for payment status update');
+      }
+
+      // Update the received amount
+      order.receivedAmount = receivedAmount || 0;
+      await order.save();
+
+      return order;
+    } catch (error) {
+      throw new Error(`Failed to toggle payment status: ${error.message}`);
+    }
+  }
 }
 
 module.exports = OrderService;
