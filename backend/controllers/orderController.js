@@ -7,8 +7,8 @@ class OrderController {
       const orderData = {
         ...req.body,
         sellerInfo: {
-          sellerId: req.sellerId,
-          sellerName: req.body.sellerInfo?.sellerName || 'Default Seller'
+          sellerId: req.body.sellerInfo?.sellerId || 'demo_seller_123',
+          sellerName: req.body.sellerInfo?.sellerName || 'Demo Seller'
         }
       };
 
@@ -30,7 +30,7 @@ class OrderController {
   // Get all orders for a seller
   static async getOrders(req, res) {
     try {
-      const sellerId = req.sellerId;
+      const sellerId = req.query.sellerId || 'demo_seller_123';
       const filters = {
         status: req.query.status,
         productId: req.query.productId,
@@ -60,7 +60,7 @@ class OrderController {
   static async getOrderById(req, res) {
     try {
       const { id } = req.params;
-      const sellerId = req.sellerId;
+      const sellerId = req.query.sellerId || 'demo_seller_123';
 
       const order = await OrderService.getOrderById(id, sellerId);
       
@@ -82,7 +82,7 @@ class OrderController {
   static async getOrderByNumber(req, res) {
     try {
       const { orderNumber } = req.params;
-      const sellerId = req.sellerId;
+      const sellerId = req.query.sellerId || 'demo_seller_123';
 
       const order = await OrderService.getOrderByNumber(orderNumber, sellerId);
       
@@ -104,7 +104,7 @@ class OrderController {
   static async updateOrderStatus(req, res) {
     try {
       const { id } = req.params;
-      const sellerId = req.sellerId;
+      const sellerId = req.query.sellerId || 'demo_seller_123';
       const { status, ...additionalData } = req.body;
 
       const order = await OrderService.updateOrderStatus(id, sellerId, status, additionalData);
@@ -127,7 +127,7 @@ class OrderController {
   static async updateOrder(req, res) {
     try {
       const { id } = req.params;
-      const sellerId = req.sellerId;
+      const sellerId = req.query.sellerId || 'demo_seller_123';
       const updateData = req.body;
 
       const order = await OrderService.updateOrder(id, sellerId, updateData);
@@ -150,7 +150,7 @@ class OrderController {
   static async deleteOrder(req, res) {
     try {
       const { id } = req.params;
-      const sellerId = req.sellerId;
+      const sellerId = req.query.sellerId || 'demo_seller_123';
       const { reason } = req.body;
 
       const order = await OrderService.deleteOrder(id, sellerId, reason);
@@ -172,7 +172,7 @@ class OrderController {
   // Get order statistics
   static async getOrderStatistics(req, res) {
     try {
-      const sellerId = req.sellerId;
+      const sellerId = req.query.sellerId || 'demo_seller_123';
       const dateRange = {
         from: req.query.dateFrom,
         to: req.query.dateTo
@@ -196,7 +196,7 @@ class OrderController {
   // Search orders
   static async searchOrders(req, res) {
     try {
-      const sellerId = req.sellerId;
+      const sellerId = req.query.sellerId || 'demo_seller_123';
       const { q } = req.query;
 
       const orders = await OrderService.searchOrders(sellerId, q);
@@ -219,7 +219,7 @@ class OrderController {
   // Get orders by status
   static async getOrdersByStatus(req, res) {
     try {
-      const sellerId = req.sellerId;
+      const sellerId = req.query.sellerId || 'demo_seller_123';
       const { status } = req.params;
 
       const orders = await OrderService.getOrdersByStatus(sellerId, status);
@@ -241,7 +241,7 @@ class OrderController {
   // Bulk update orders
   static async bulkUpdateOrders(req, res) {
     try {
-      const sellerId = req.sellerId;
+      const sellerId = req.query.sellerId || 'demo_seller_123';
       const { orderIds, updateData } = req.body;
 
       if (!Array.isArray(orderIds) || orderIds.length === 0) {
@@ -272,7 +272,7 @@ class OrderController {
   // Get recent orders (last 7 days)
   static async getRecentOrders(req, res) {
     try {
-      const sellerId = req.sellerId;
+      const sellerId = req.query.sellerId || 'demo_seller_123';
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 

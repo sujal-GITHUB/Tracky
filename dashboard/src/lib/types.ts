@@ -16,13 +16,6 @@ export interface SellerInfo {
   sellerName: string;
 }
 
-export interface CustomerInfo {
-  name: string;
-  phone: string;
-  address: string;
-  pincode: string;
-}
-
 export interface ShippingInfo {
   trackingNumber?: string;
   courierService?: string;
@@ -42,10 +35,9 @@ export interface Order {
   productName: string;
   productId: string;
   dateOfDeparture: string;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'received' | 'cancelled';
+  status: 'pending' | 'delivered' | 'cancelled';
   amount: number;
   receivedAmount: number;
-  customerInfo: CustomerInfo;
   sellerInfo: SellerInfo;
   shippingInfo?: ShippingInfo;
   paymentInfo?: PaymentInfo;
@@ -58,6 +50,7 @@ export interface Order {
   orderAge?: number;
   isDelivered?: boolean;
   isCancelled?: boolean;
+  isPaymentReceived?: boolean;
 }
 
 // Order statistics
@@ -66,12 +59,14 @@ export interface OrderStats {
   totalAmount: number;
   totalReceivedAmount: number;
   pendingOrders: number;
-  confirmedOrders: number;
-  shippedOrders: number;
   deliveredOrders: number;
-  receivedOrders: number;
   cancelledOrders: number;
-  averageOrderValue: number;
+  pendingWithPayment: number;
+  pendingWithoutPayment: number;
+  deliveredWithPayment: number;
+  deliveredWithoutPayment: number;
+  cancelledWithPayment: number;
+  cancelledWithoutPayment: number;
 }
 
 // Order form data for creating/updating orders
@@ -80,7 +75,6 @@ export interface OrderFormData {
   productId: string;
   dateOfDeparture: string;
   amount: number;
-  customerInfo: CustomerInfo;
   sellerInfo: SellerInfo;
   shippingInfo?: Partial<ShippingInfo>;
   paymentInfo?: Partial<PaymentInfo>;

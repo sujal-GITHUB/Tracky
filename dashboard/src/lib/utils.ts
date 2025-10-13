@@ -41,14 +41,8 @@ export function getStatusColor(status: OrderStatus): string {
   switch (status) {
     case 'pending':
       return 'text-yellow-600 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/20';
-    case 'confirmed':
-      return 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/20';
-    case 'shipped':
-      return 'text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900/20';
     case 'delivered':
       return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/20';
-    case 'received':
-      return 'text-emerald-600 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/20';
     case 'cancelled':
       return 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/20';
     default:
@@ -60,14 +54,8 @@ export function getStatusBadgeColor(status: OrderStatus): string {
   switch (status) {
     case 'pending':
       return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
-    case 'confirmed':
-      return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
-    case 'shipped':
-      return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
     case 'delivered':
       return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
-    case 'received':
-      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400';
     case 'cancelled':
       return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
     default:
@@ -122,14 +110,8 @@ export function getOrderStatusIcon(status: OrderStatus): string {
   switch (status) {
     case 'pending':
       return '⏳';
-    case 'confirmed':
-      return '✅';
-    case 'shipped':
-      return '🚚';
     case 'delivered':
       return '📦';
-    case 'received':
-      return '🎉';
     case 'cancelled':
       return '❌';
     default:

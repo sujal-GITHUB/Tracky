@@ -12,18 +12,10 @@ const api = axios.create({
 
 console.log('API Base URL:', API_BASE_URL);
 
-// Request interceptor to add auth token (optional for demo)
+// Request interceptor (no authentication needed)
 api.interceptors.request.use(
   (config) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('trackyToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      } else {
-        // For demo purposes, add a default token
-        config.headers.Authorization = `Bearer demo-token`;
-      }
-    }
+    // No authentication headers needed
     return config;
   },
   (error) => {
@@ -31,15 +23,12 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle auth errors
+// Response interceptor (no authentication handling needed)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (typeof window !== 'undefined' && error.response?.status === 401) {
-      localStorage.removeItem('trackyToken');
-      // Don't redirect to login, just log the error
-      console.warn('Authentication error:', error.response?.data?.message);
-    }
+    // Just log errors, no authentication handling
+    console.error('API Error:', error.response?.data?.message || error.message);
     return Promise.reject(error);
   }
 );

@@ -85,6 +85,12 @@ class OrderService {
 
       // Add additional data based on status
       switch (newStatus) {
+        case 'pending':
+          // For pending orders, received amount is typically 0
+          if (additionalData.receivedAmount !== undefined) {
+            updateData.receivedAmount = additionalData.receivedAmount;
+          }
+          break;
         case 'delivered':
           updateData.receivedAmount = additionalData.receivedAmount || 0;
           break;
@@ -92,14 +98,10 @@ class OrderService {
           updateData.cancellationReason = additionalData.cancellationReason;
           updateData.cancelledBy = additionalData.cancelledBy || 'seller';
           updateData.cancelledAt = new Date();
-          break;
-        case 'shipped':
-          updateData.shippingInfo = {
-            ...updateData.shippingInfo,
-            trackingNumber: additionalData.trackingNumber,
-            courierService: additionalData.courierService,
-            estimatedDelivery: additionalData.estimatedDelivery
-          };
+          // If cancelled, set received amount to 0 unless specified otherwise
+          if (additionalData.receivedAmount === undefined) {
+            updateData.receivedAmount = 0;
+          }
           break;
       }
 
@@ -185,20 +187,95 @@ class OrderService {
             pendingOrders: {
               $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
             },
-            confirmedOrders: {
-              $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, 1, 0] }
-            },
-            shippedOrders: {
-              $sum: { $cond: [{ $eq: ['$status', 'shipped'] }, 1, 0] }
-            },
             deliveredOrders: {
               $sum: { $cond: [{ $eq: ['$status', 'delivered'] }, 1, 0] }
             },
-            receivedOrders: {
-              $sum: { $cond: [{ $eq: ['$status', 'received'] }, 1, 0] }
-            },
             cancelledOrders: {
               $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] }
+            },
+            pendingWithPayment: {
+              $sum: { 
+                $cond: [
+                  { 
+                    $and: [
+                      { $eq: ['$status', 'pending'] },
+                      { $gt: ['$receivedAmount', 0] }
+                    ]
+                  }, 
+                  1, 
+                  0
+                ]
+              }
+            },
+            pendingWithoutPayment: {
+              $sum: { 
+                $cond: [
+                  { 
+                    $and: [
+                      { $eq: ['$status', 'pending'] },
+                      { $eq: ['$receivedAmount', 0] }
+                    ]
+                  }, 
+                  1, 
+                  0
+                ]
+              }
+            },
+            deliveredWithPayment: {
+              $sum: { 
+                $cond: [
+                  { 
+                    $and: [
+                      { $eq: ['$status', 'delivered'] },
+                      { $gt: ['$receivedAmount', 0] }
+                    ]
+                  }, 
+                  1, 
+                  0
+                ]
+              }
+            },
+            deliveredWithoutPayment: {
+              $sum: { 
+                $cond: [
+                  { 
+                    $and: [
+                      { $eq: ['$status', 'delivered'] },
+                      { $eq: ['$receivedAmount', 0] }
+                    ]
+                  }, 
+                  1, 
+                  0
+                ]
+              }
+            },
+            cancelledWithPayment: {
+              $sum: { 
+                $cond: [
+                  { 
+                    $and: [
+                      { $eq: ['$status', 'cancelled'] },
+                      { $gt: ['$receivedAmount', 0] }
+                    ]
+                  }, 
+                  1, 
+                  0
+                ]
+              }
+            },
+            cancelledWithoutPayment: {
+              $sum: { 
+                $cond: [
+                  { 
+                    $and: [
+                      { $eq: ['$status', 'cancelled'] },
+                      { $eq: ['$receivedAmount', 0] }
+                    ]
+                  }, 
+                  1, 
+                  0
+                ]
+              }
             }
           }
         }
@@ -209,11 +286,14 @@ class OrderService {
         totalAmount: 0,
         totalReceivedAmount: 0,
         pendingOrders: 0,
-        confirmedOrders: 0,
-        shippedOrders: 0,
         deliveredOrders: 0,
-        receivedOrders: 0,
-        cancelledOrders: 0
+        cancelledOrders: 0,
+        pendingWithPayment: 0,
+        pendingWithoutPayment: 0,
+        deliveredWithPayment: 0,
+        deliveredWithoutPayment: 0,
+        cancelledWithPayment: 0,
+        cancelledWithoutPayment: 0
       };
     } catch (error) {
       throw new Error(`Failed to fetch order statistics: ${error.message}`);
@@ -228,9 +308,7 @@ class OrderService {
         $or: [
           { orderNumber: { $regex: searchQuery, $options: 'i' } },
           { productName: { $regex: searchQuery, $options: 'i' } },
-          { productId: { $regex: searchQuery, $options: 'i' } },
-          { 'customerInfo.name': { $regex: searchQuery, $options: 'i' } },
-          { 'customerInfo.phone': { $regex: searchQuery, $options: 'i' } }
+          { productId: { $regex: searchQuery, $options: 'i' } }
         ]
       };
 

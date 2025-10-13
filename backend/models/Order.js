@@ -4,8 +4,7 @@ const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
     required: true,
-    unique: true,
-    index: true
+    unique: true
   },
   productName: {
     type: String,
@@ -23,7 +22,7 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'shipped', 'delivered', 'received', 'cancelled'],
+    enum: ['pending', 'delivered', 'cancelled'],
     default: 'pending'
   },
   amount: {
@@ -35,28 +34,6 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0
-  },
-  customerInfo: {
-    name: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    phone: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    address: {
-      type: String,
-      required: true,
-      trim: true
-    },
-    pincode: {
-      type: String,
-      required: true,
-      trim: true
-    }
   },
   sellerInfo: {
     sellerId: {
@@ -136,12 +113,17 @@ orderSchema.virtual('orderAge').get(function() {
 
 // Virtual for delivery status
 orderSchema.virtual('isDelivered').get(function() {
-  return this.status === 'delivered' || this.status === 'received';
+  return this.status === 'delivered';
 });
 
 // Virtual for cancellation status
 orderSchema.virtual('isCancelled').get(function() {
   return this.status === 'cancelled';
+});
+
+// Virtual for payment status
+orderSchema.virtual('isPaymentReceived').get(function() {
+  return this.receivedAmount > 0;
 });
 
 // Pre-save middleware to generate order number if not provided

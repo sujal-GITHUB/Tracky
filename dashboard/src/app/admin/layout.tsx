@@ -162,20 +162,8 @@ export default function AdminLayout({
                 })}
               </nav>
             </div>
-            <div className="flex-shrink-0 flex border-t border-gray-300 dark:border-gray-500 p-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleLogout}
-                className={cn(
-                  "border-gray-500 text-black hover:bg-black hover:text-white dark:border-gray-400 dark:text-white dark:hover:bg-white dark:hover:text-black",
-                  sidebarCollapsed ? "w-8 h-8 p-0" : "w-full"
-                )}
-                title={sidebarCollapsed ? "Logout" : undefined}
-              >
-                <LogOut className={cn("h-4 w-4", !sidebarCollapsed && "mr-2")} />
-                {!sidebarCollapsed && "Logout"}
-              </Button>
+            <div className="flex-shrink-0 flex border-t justify-center border-gray-300 dark:border-gray-500 p-4">
+              Tracky
             </div>
           </div>
         </div>

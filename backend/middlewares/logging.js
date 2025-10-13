@@ -45,7 +45,9 @@ const responseTime = (req, res, next) => {
   
   res.on('finish', () => {
     const duration = Date.now() - start;
-    res.set('X-Response-Time', duration.toString());
+    if (!res.headersSent) {
+      res.set('X-Response-Time', duration.toString());
+    }
   });
   
   next();

@@ -10,7 +10,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Tracky Order Management",
+  title: "Tracky",
   description: "Order management system for Tracky sellers",
 };
 

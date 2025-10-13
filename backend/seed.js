@@ -8,16 +8,10 @@ const demoOrders = [
     orderNumber: 'ORD000001',
     productName: 'Wireless Bluetooth Headphones',
     productId: 'WBH001',
-    dateOfDeparture: new Date('2024-01-20T10:00:00Z'),
+    dateOfDeparture: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
     status: 'delivered',
     amount: 2500,
-    receivedAmount: 2500,
-    customerInfo: {
-      name: 'Rajesh Kumar',
-      phone: '9876543210',
-      address: '123 MG Road, Bangalore, Karnataka',
-      pincode: '560001'
-    },
+    receivedAmount: 2500, // Payment received
     sellerInfo: {
       sellerId: 'demo_seller_123',
       sellerName: 'Demo Seller'
@@ -36,23 +30,17 @@ const demoOrders = [
     orderNumber: 'ORD000002',
     productName: 'Smart Watch Series 5',
     productId: 'SW005',
-    dateOfDeparture: new Date('2024-01-18T14:30:00Z'),
-    status: 'shipped',
+    dateOfDeparture: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+    status: 'pending',
     amount: 8500,
-    receivedAmount: 0,
-    customerInfo: {
-      name: 'Priya Sharma',
-      phone: '8765432109',
-      address: '456 Park Street, Mumbai, Maharashtra',
-      pincode: '400001'
-    },
+    receivedAmount: 0, // Payment not received yet
     sellerInfo: {
       sellerId: 'demo_seller_123',
       sellerName: 'Demo Seller'
     },
     paymentInfo: {
       paymentMethod: 'online',
-      paymentStatus: 'paid'
+      paymentStatus: 'pending'
     },
     shippingInfo: {
       trackingNumber: 'TRK987654321',
@@ -64,62 +52,44 @@ const demoOrders = [
     orderNumber: 'ORD000003',
     productName: 'Laptop Stand Adjustable',
     productId: 'LS001',
-    dateOfDeparture: new Date('2024-01-15T09:15:00Z'),
+    dateOfDeparture: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
     status: 'pending',
     amount: 1200,
-    receivedAmount: 0,
-    customerInfo: {
-      name: 'Amit Patel',
-      phone: '7654321098',
-      address: '789 Sector 15, Gurgaon, Haryana',
-      pincode: '122001'
-    },
+    receivedAmount: 1200, // Payment received
     sellerInfo: {
       sellerId: 'demo_seller_123',
       sellerName: 'Demo Seller'
     },
     paymentInfo: {
       paymentMethod: 'cod',
-      paymentStatus: 'pending'
+      paymentStatus: 'paid'
     }
   },
   {
     orderNumber: 'ORD000004',
     productName: 'Mechanical Gaming Keyboard',
     productId: 'MGK002',
-    dateOfDeparture: new Date('2024-01-12T16:45:00Z'),
-    status: 'confirmed',
+    dateOfDeparture: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000), // 4 days ago
+    status: 'delivered',
     amount: 3500,
-    receivedAmount: 0,
-    customerInfo: {
-      name: 'Sneha Reddy',
-      phone: '6543210987',
-      address: '321 Brigade Road, Chennai, Tamil Nadu',
-      pincode: '600001'
-    },
+    receivedAmount: 0, // Payment not received
     sellerInfo: {
       sellerId: 'demo_seller_123',
       sellerName: 'Demo Seller'
     },
     paymentInfo: {
       paymentMethod: 'wallet',
-      paymentStatus: 'paid'
+      paymentStatus: 'pending'
     }
   },
   {
     orderNumber: 'ORD000005',
     productName: 'Wireless Mouse Ergonomic',
     productId: 'WME003',
-    dateOfDeparture: new Date('2024-01-10T11:20:00Z'),
+    dateOfDeparture: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 days ago
     status: 'cancelled',
     amount: 800,
-    receivedAmount: 0,
-    customerInfo: {
-      name: 'Vikram Singh',
-      phone: '5432109876',
-      address: '654 Nehru Place, Delhi',
-      pincode: '110019'
-    },
+    receivedAmount: 0, // Payment not received
     sellerInfo: {
       sellerId: 'demo_seller_123',
       sellerName: 'Demo Seller'
@@ -136,16 +106,10 @@ const demoOrders = [
     orderNumber: 'ORD000006',
     productName: 'USB-C Hub Multiport',
     productId: 'UCH004',
-    dateOfDeparture: new Date('2024-01-08T13:10:00Z'),
-    status: 'received',
+    dateOfDeparture: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000), // 6 days ago
+    status: 'cancelled',
     amount: 1800,
-    receivedAmount: 1800,
-    customerInfo: {
-      name: 'Anita Desai',
-      phone: '4321098765',
-      address: '987 Commercial Street, Pune, Maharashtra',
-      pincode: '411001'
-    },
+    receivedAmount: 1800, // Payment received before cancellation
     sellerInfo: {
       sellerId: 'demo_seller_123',
       sellerName: 'Demo Seller'
@@ -158,6 +122,43 @@ const demoOrders = [
       trackingNumber: 'TRK456789123',
       courierService: 'India Post',
       estimatedDelivery: new Date('2024-01-14T17:00:00Z')
+    },
+    cancellationReason: 'Product damaged during shipping',
+    cancelledBy: 'seller',
+    cancelledAt: new Date('2024-01-15T14:20:00Z')
+  },
+  {
+    orderNumber: 'ORD000007',
+    productName: 'Gaming Headset Pro',
+    productId: 'GHP007',
+    dateOfDeparture: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+    status: 'pending',
+    amount: 4500,
+    receivedAmount: 0, // Payment not received yet
+    sellerInfo: {
+      sellerId: 'demo_seller_123',
+      sellerName: 'Demo Seller'
+    },
+    paymentInfo: {
+      paymentMethod: 'cod',
+      paymentStatus: 'pending'
+    }
+  },
+  {
+    orderNumber: 'ORD000008',
+    productName: 'Wireless Charging Pad',
+    productId: 'WCP008',
+    dateOfDeparture: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+    status: 'pending',
+    amount: 1500,
+    receivedAmount: 1500, // Payment received
+    sellerInfo: {
+      sellerId: 'demo_seller_123',
+      sellerName: 'Demo Seller'
+    },
+    paymentInfo: {
+      paymentMethod: 'online',
+      paymentStatus: 'paid'
     }
   }
 ];

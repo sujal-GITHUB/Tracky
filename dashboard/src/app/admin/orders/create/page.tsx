@@ -23,12 +23,6 @@ export default function CreateOrderPage() {
     productId: '',
     dateOfDeparture: '',
     amount: 0,
-    customerInfo: {
-      name: '',
-      phone: '',
-      address: '',
-      pincode: ''
-    },
     sellerInfo: {
       sellerId: 'seller_123', // Default seller ID
       sellerName: 'Tracky Store'
@@ -161,64 +155,6 @@ export default function CreateOrderPage() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Customer Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <User className="h-5 w-5 mr-2" />
-                Customer Information
-              </CardTitle>
-              <CardDescription>
-                Enter the customer details
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="customerName">Customer Name *</Label>
-                <Input
-                  id="customerName"
-                  value={formData.customerInfo.name}
-                  onChange={(e) => handleInputChange('customerInfo.name', e.target.value)}
-                  placeholder="Enter customer name"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="customerPhone">Phone Number *</Label>
-                <Input
-                  id="customerPhone"
-                  value={formData.customerInfo.phone}
-                  onChange={(e) => handleInputChange('customerInfo.phone', e.target.value)}
-                  placeholder="Enter phone number"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="customerAddress">Address *</Label>
-                <Textarea
-                  id="customerAddress"
-                  value={formData.customerInfo.address}
-                  onChange={(e) => handleInputChange('customerInfo.address', e.target.value)}
-                  placeholder="Enter complete address"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="customerPincode">Pincode *</Label>
-                <Input
-                  id="customerPincode"
-                  value={formData.customerInfo.pincode}
-                  onChange={(e) => handleInputChange('customerInfo.pincode', e.target.value)}
-                  placeholder="Enter pincode"
-                  required
-                />
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Payment Information */}
@@ -311,10 +247,6 @@ export default function CreateOrderPage() {
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Amount:</span>
                 <span className="font-medium">{formatPrice(formData.amount)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Customer:</span>
-                <span className="font-medium">{formData.customerInfo.name || 'N/A'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Payment:</span>

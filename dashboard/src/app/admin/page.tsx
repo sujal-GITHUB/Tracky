@@ -75,10 +75,10 @@ export default function AdminDashboard() {
       color: 'bg-yellow-500',
     },
     {
-      name: 'Shipped Orders',
-      value: stats?.shippedOrders || 0,
-      icon: Truck,
-      color: 'bg-purple-500',
+      name: 'Delivered Orders',
+      value: stats?.deliveredOrders || 0,
+      icon: Package,
+      color: 'bg-green-500',
     },
     {
       name: 'Cancelled Orders',
@@ -130,13 +130,10 @@ export default function AdminDashboard() {
           <h3 className="text-lg leading-6 font-medium text-black dark:text-white mb-4">
             Order Status Breakdown
           </h3>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             {[
               { status: 'pending', count: stats?.pendingOrders || 0 },
-              { status: 'confirmed', count: stats?.confirmedOrders || 0 },
-              { status: 'shipped', count: stats?.shippedOrders || 0 },
               { status: 'delivered', count: stats?.deliveredOrders || 0 },
-              { status: 'received', count: stats?.receivedOrders || 0 },
               { status: 'cancelled', count: stats?.cancelledOrders || 0 },
             ].map(({ status, count }) => (
               <div key={status} className="text-center">
@@ -181,7 +178,7 @@ export default function AdminDashboard() {
                           {order.productName} • {formatPrice(order.amount)}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {order.customerInfo.name} • {formatDate(order.createdAt)}
+                          {formatDate(order.createdAt)}
                         </p>
                       </div>
                       <div className="flex-shrink-0">

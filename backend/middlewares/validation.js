@@ -41,30 +41,6 @@ const validateOrder = [
     .isFloat({ min: 0 })
     .withMessage('Amount must be greater than or equal to 0'),
   
-  body('customerInfo.name')
-    .notEmpty()
-    .withMessage('Customer name is required')
-    .isLength({ min: 2, max: 50 })
-    .withMessage('Customer name must be between 2 and 50 characters'),
-  
-  body('customerInfo.phone')
-    .notEmpty()
-    .withMessage('Customer phone is required')
-    .isMobilePhone('any')
-    .withMessage('Customer phone must be a valid phone number'),
-  
-  body('customerInfo.address')
-    .notEmpty()
-    .withMessage('Customer address is required')
-    .isLength({ min: 10, max: 200 })
-    .withMessage('Customer address must be between 10 and 200 characters'),
-  
-  body('customerInfo.pincode')
-    .notEmpty()
-    .withMessage('Customer pincode is required')
-    .isPostalCode('IN')
-    .withMessage('Customer pincode must be a valid Indian postal code'),
-  
   body('sellerInfo.sellerId')
     .notEmpty()
     .withMessage('Seller ID is required')
@@ -84,8 +60,8 @@ const validateOrder = [
 const validateOrderUpdate = [
   body('status')
     .optional()
-    .isIn(['pending', 'confirmed', 'shipped', 'delivered', 'received', 'cancelled'])
-    .withMessage('Status must be one of: pending, confirmed, shipped, delivered, received, cancelled'),
+    .isIn(['pending', 'delivered', 'cancelled'])
+    .withMessage('Status must be one of: pending, delivered, cancelled'),
   
   body('receivedAmount')
     .optional()
@@ -151,8 +127,8 @@ const validateSellerId = [
 const validateQueryParams = [
   query('status')
     .optional()
-    .isIn(['pending', 'confirmed', 'shipped', 'delivered', 'received', 'cancelled'])
-    .withMessage('Status must be one of: pending, confirmed, shipped, delivered, received, cancelled'),
+    .isIn(['pending', 'delivered', 'cancelled'])
+    .withMessage('Status must be one of: pending, delivered, cancelled'),
   
   query('limit')
     .optional()

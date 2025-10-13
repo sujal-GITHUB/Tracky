@@ -70,10 +70,7 @@ export default function OrdersPage() {
   const orderStatuses = [
     { value: 'all', label: 'All Statuses' },
     { value: 'pending', label: 'Pending' },
-    { value: 'confirmed', label: 'Confirmed' },
-    { value: 'shipped', label: 'Shipped' },
     { value: 'delivered', label: 'Delivered' },
-    { value: 'received', label: 'Received' },
     { value: 'cancelled', label: 'Cancelled' },
   ];
 
@@ -177,7 +174,7 @@ export default function OrdersPage() {
                           {order.productName} • {formatPrice(order.amount)}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {order.customerInfo.name} • {formatDate(order.createdAt)}
+                          {formatDate(order.createdAt)}
                         </div>
                         {order.receivedAmount > 0 && (
                           <div className="text-sm text-green-600 dark:text-green-400">
@@ -201,11 +198,6 @@ export default function OrdersPage() {
                   {order.shippingInfo?.trackingNumber && (
                     <div className="mt-2 text-sm text-gray-500">
                       <strong>Tracking:</strong> {order.shippingInfo.trackingNumber}
-                    </div>
-                  )}
-                  {order.customerInfo.address && (
-                    <div className="mt-1 text-sm text-gray-500">
-                      <strong>Address:</strong> {order.customerInfo.address}, {order.customerInfo.pincode}
                     </div>
                   )}
                 </div>

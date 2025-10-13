@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Edit, Trash2, Package, User, MapPin, CreditCard, Calendar, Phone, Mail } from 'lucide-react';
+import { ArrowLeft, Edit, Trash2, Package, User, MapPin, CreditCard, Calendar, Phone, Mail, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { orderAPI } from '@/lib/api';
 import { Order, OrderStatusUpdate } from '@/lib/types';
 import { formatPrice, formatDate, getStatusBadgeColor, getOrderStatusIcon } from '@/lib/utils';
@@ -24,6 +27,11 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<string | null>(null);
+  const [paymentReceived, setPaymentReceived] = useState(false);
+  const [receivedAmount, setReceivedAmount] = useState(0);
+  const [cancellationReason, setCancellationReason] = useState('');
 
   useEffect(() => {
     fetchOrder();
@@ -45,19 +53,31 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
     }
   };
 
-  const handleStatusUpdate = async (newStatus: string) => {
+  const handleStatusToggle = (newStatus: string) => {
+    if (!order) return;
+    
+    // If changing from pending to delivered or cancelled, show payment dialog
+    if (order.status === 'pending' && (newStatus === 'delivered' || newStatus === 'cancelled')) {
+      setPendingStatusChange(newStatus);
+      setReceivedAmount(order.amount);
+      setPaymentReceived(false);
+      setCancellationReason('');
+      setShowPaymentDialog(true);
+    } else {
+      // Direct status update for other cases
+      handleStatusUpdate(newStatus);
+    }
+  };
+
+  const handleStatusUpdate = async (newStatus: string, additionalData: any = {}) => {
     if (!order) return;
 
     setUpdating(true);
     try {
       const updateData: OrderStatusUpdate = {
         status: newStatus as any,
+        ...additionalData
       };
-
-      // Add specific data based on status
-      if (newStatus === 'delivered') {
-        updateData.receivedAmount = order.amount;
-      }
 
       const response = await orderAPI.updateOrderStatus(order._id, updateData);
       setOrder(response.data.data);
@@ -77,6 +97,24 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
     } finally {
       setUpdating(false);
     }
+  };
+
+  const handlePaymentDialogSubmit = async () => {
+    if (!pendingStatusChange || !order) return;
+
+    const additionalData: any = {};
+    
+    if (pendingStatusChange === 'delivered') {
+      additionalData.receivedAmount = paymentReceived ? receivedAmount : 0;
+    } else if (pendingStatusChange === 'cancelled') {
+      additionalData.receivedAmount = paymentReceived ? receivedAmount : 0;
+      additionalData.cancellationReason = cancellationReason || 'Cancelled by seller';
+      additionalData.cancelledBy = 'seller';
+    }
+
+    setShowPaymentDialog(false);
+    await handleStatusUpdate(pendingStatusChange, additionalData);
+    setPendingStatusChange(null);
   };
 
   const handleDeleteOrder = async () => {
@@ -133,15 +171,6 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
       </div>
     );
   }
-
-  const statusOptions = [
-    { value: 'pending', label: 'Pending' },
-    { value: 'confirmed', label: 'Confirmed' },
-    { value: 'shipped', label: 'Shipped' },
-    { value: 'delivered', label: 'Delivered' },
-    { value: 'received', label: 'Received' },
-    { value: 'cancelled', label: 'Cancelled' },
-  ];
 
   return (
     <div className="space-y-6">
@@ -213,33 +242,6 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                   <p className="text-lg font-medium text-black dark:text-white">
                     {order.orderAge || 0} days
                   </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Customer Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <User className="h-5 w-5 mr-2" />
-                Customer Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Customer Name</Label>
-                  <p className="text-lg font-medium text-black dark:text-white">{order.customerInfo.name}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone Number</Label>
-                  <p className="text-lg font-medium text-black dark:text-white">{order.customerInfo.phone}</p>
-                </div>
-                <div className="sm:col-span-2">
-                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Address</Label>
-                  <p className="text-lg font-medium text-black dark:text-white">{order.customerInfo.address}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Pincode: {order.customerInfo.pincode}</p>
                 </div>
               </div>
             </CardContent>
@@ -386,23 +388,53 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
               </div>
               
               <div>
-                <Label htmlFor="status">Change Status</Label>
-                <Select 
-                  value={order.status} 
-                  onValueChange={handleStatusUpdate}
-                  disabled={updating}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map((status) => (
-                      <SelectItem key={status.value} value={status.value}>
-                        {status.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Change Status</Label>
+                <div className="flex gap-2 mt-2">
+                  {order.status === 'pending' && (
+                    <>
+                      <Button
+                        onClick={() => handleStatusToggle('delivered')}
+                        disabled={updating}
+                        className="bg-green-600 hover:bg-green-700"
+                        size="sm"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Mark as Delivered
+                      </Button>
+                      <Button
+                        onClick={() => handleStatusToggle('cancelled')}
+                        disabled={updating}
+                        variant="destructive"
+                        size="sm"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Cancel Order
+                      </Button>
+                    </>
+                  )}
+                  {order.status === 'delivered' && (
+                    <Button
+                      onClick={() => handleStatusToggle('cancelled')}
+                      disabled={updating}
+                      variant="destructive"
+                      size="sm"
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Cancel Order
+                    </Button>
+                  )}
+                  {order.status === 'cancelled' && (
+                    <Button
+                      onClick={() => handleStatusToggle('delivered')}
+                      disabled={updating}
+                      className="bg-green-600 hover:bg-green-700"
+                      size="sm"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Mark as Delivered
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -446,6 +478,82 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
           </Card>
         </div>
       </div>
+
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {pendingStatusChange === 'delivered' ? 'Mark as Delivered' : 'Cancel Order'}
+            </DialogTitle>
+            <DialogDescription>
+              {pendingStatusChange === 'delivered' 
+                ? 'Please confirm if payment was received for this order.'
+                : 'Please provide details for cancelling this order.'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="paymentReceived"
+                checked={paymentReceived}
+                onChange={(e) => setPaymentReceived(e.target.checked)}
+                className="rounded"
+              />
+              <Label htmlFor="paymentReceived">
+                Payment Received
+              </Label>
+            </div>
+            
+            {paymentReceived && (
+              <div>
+                <Label htmlFor="receivedAmount">Received Amount</Label>
+                <Input
+                  id="receivedAmount"
+                  type="number"
+                  value={receivedAmount}
+                  onChange={(e) => setReceivedAmount(Number(e.target.value))}
+                  placeholder="Enter received amount"
+                  min="0"
+                  max={order?.amount || 0}
+                />
+              </div>
+            )}
+            
+            {pendingStatusChange === 'cancelled' && (
+              <div>
+                <Label htmlFor="cancellationReason">Cancellation Reason</Label>
+                <Textarea
+                  id="cancellationReason"
+                  value={cancellationReason}
+                  onChange={(e) => setCancellationReason(e.target.value)}
+                  placeholder="Enter reason for cancellation"
+                  rows={3}
+                />
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowPaymentDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handlePaymentDialogSubmit}
+              disabled={updating}
+              className={pendingStatusChange === 'delivered' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+            >
+              {updating ? 'Updating...' : (pendingStatusChange === 'delivered' ? 'Mark as Delivered' : 'Cancel Order')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

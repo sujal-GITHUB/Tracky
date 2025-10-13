@@ -71,10 +71,7 @@ export default function AnalyticsPage() {
   // Prepare data for charts
   const statusData = [
     { name: 'Pending', value: stats?.pendingOrders || 0, color: '#F59E0B' },
-    { name: 'Confirmed', value: stats?.confirmedOrders || 0, color: '#3B82F6' },
-    { name: 'Shipped', value: stats?.shippedOrders || 0, color: '#8B5CF6' },
     { name: 'Delivered', value: stats?.deliveredOrders || 0, color: '#10B981' },
-    { name: 'Received', value: stats?.receivedOrders || 0, color: '#059669' },
     { name: 'Cancelled', value: stats?.cancelledOrders || 0, color: '#EF4444' },
   ];
 
@@ -85,7 +82,7 @@ export default function AnalyticsPage() {
   ];
 
   const completionRate = stats?.totalOrders ? 
-    ((stats.deliveredOrders + stats.receivedOrders) / stats.totalOrders * 100) : 0;
+    (stats.deliveredOrders / stats.totalOrders * 100) : 0;
 
   const cancellationRate = stats?.totalOrders ? 
     (stats.cancelledOrders / stats.totalOrders * 100) : 0;
@@ -121,7 +118,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {stats?.deliveredOrders + stats?.receivedOrders || 0}
+              {stats?.deliveredOrders || 0}
             </div>
             <p className="text-xs text-muted-foreground">
               <span className="text-green-600">+8.2%</span> completion rate
