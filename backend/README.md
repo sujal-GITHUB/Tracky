@@ -95,6 +95,11 @@ All endpoints require JWT authentication via `Authorization: Bearer <token>` hea
    npm start
    ```
 
+6. **Seed demo data (optional)**
+   ```bash
+   npm run seed
+   ```
+
 ## API Usage Examples
 
 ### Create Order

@@ -8,23 +8,25 @@ import {
   TrendingUp,
   DollarSign,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Truck,
+  XCircle
 } from 'lucide-react';
-import api from '@/lib/api';
-import { OrderStats } from '@/lib/types';
-import { formatPrice } from '@/lib/utils';
+import { orderAPI } from '@/lib/api';
+import { OrderStats, Order } from '@/lib/types';
+import { formatPrice, formatDate, getStatusBadgeColor } from '@/lib/utils';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<OrderStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [recentOrders, setRecentOrders] = useState([]);
+  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         const [statsResponse, recentOrdersResponse] = await Promise.all([
-          api.get('/orders/admin/stats'),
-          api.get('/orders/admin/recent?limit=5')
+          orderAPI.getOrderStatistics(),
+          orderAPI.getRecentOrders(5)
         ]);
 
         setStats(statsResponse.data.data);
@@ -56,9 +58,15 @@ export default function AdminDashboard() {
     },
     {
       name: 'Total Revenue',
-      value: formatPrice(stats?.totalRevenue || 0),
+      value: formatPrice(stats?.totalAmount || 0),
       icon: DollarSign,
       color: 'bg-green-500',
+    },
+    {
+      name: 'Received Amount',
+      value: formatPrice(stats?.totalReceivedAmount || 0),
+      icon: CheckCircle,
+      color: 'bg-emerald-500',
     },
     {
       name: 'Pending Orders',
@@ -67,24 +75,30 @@ export default function AdminDashboard() {
       color: 'bg-yellow-500',
     },
     {
-      name: 'Completed Orders',
-      value: stats?.completedOrders || 0,
-      icon: CheckCircle,
+      name: 'Shipped Orders',
+      value: stats?.shippedOrders || 0,
+      icon: Truck,
       color: 'bg-purple-500',
+    },
+    {
+      name: 'Cancelled Orders',
+      value: stats?.cancelledOrders || 0,
+      icon: XCircle,
+      color: 'bg-red-500',
     },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-black dark:text-white">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-black dark:text-white">Tracky Dashboard</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Welcome to the admin panel. Here's an overview of your store.
+          Welcome to your order management dashboard. Track and manage your orders efficiently.
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         {statCards.map((stat) => (
           <div key={stat.name} className="bg-white dark:bg-[#1a1a1a] overflow-hidden shadow rounded-lg border border-gray-300 dark:border-gray-500">
             <div className="p-5">
@@ -110,6 +124,34 @@ export default function AdminDashboard() {
         ))}
       </div>
 
+      {/* Order Status Breakdown */}
+      <div className="bg-white dark:bg-[#1a1a1a] shadow rounded-lg border border-gray-300 dark:border-gray-500">
+        <div className="px-4 py-5 sm:p-6">
+          <h3 className="text-lg leading-6 font-medium text-black dark:text-white mb-4">
+            Order Status Breakdown
+          </h3>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {[
+              { status: 'pending', count: stats?.pendingOrders || 0 },
+              { status: 'confirmed', count: stats?.confirmedOrders || 0 },
+              { status: 'shipped', count: stats?.shippedOrders || 0 },
+              { status: 'delivered', count: stats?.deliveredOrders || 0 },
+              { status: 'received', count: stats?.receivedOrders || 0 },
+              { status: 'cancelled', count: stats?.cancelledOrders || 0 },
+            ].map(({ status, count }) => (
+              <div key={status} className="text-center">
+                <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(status as any)}`}>
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </div>
+                <div className="mt-1 text-lg font-semibold text-black dark:text-white">
+                  {count}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Recent Orders */}
       <div className="bg-white dark:bg-[#1a1a1a] shadow rounded-lg border border-gray-300 dark:border-gray-500">
         <div className="px-4 py-5 sm:p-6">
@@ -123,8 +165,8 @@ export default function AdminDashboard() {
                   <div className="text-center text-gray-500 dark:text-gray-400">No recent orders</div>
                 </li>
               ) : (
-                recentOrders.map((order: any) => (
-                  <li key={order.id} className="py-4">
+                recentOrders.map((order) => (
+                  <li key={order._id} className="py-4">
                     <div className="flex items-center space-x-4">
                       <div className="flex-shrink-0">
                         <div className="h-8 w-8 rounded-full bg-[#FFDEDE] dark:bg-[#1a1a1a] flex items-center justify-center">
@@ -133,20 +175,17 @@ export default function AdminDashboard() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-black dark:text-white truncate">
-                          Order #{order.id.slice(-8)}
+                          {order.orderNumber}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {order.user?.name || order.user?.email} • {formatPrice(order.total)}
+                          {order.productName} • {formatPrice(order.amount)}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          {order.customerInfo.name} • {formatDate(order.createdAt)}
                         </p>
                       </div>
                       <div className="flex-shrink-0">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          order.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
-                          order.status === 'PROCESSING' ? 'bg-blue-100 text-blue-800' :
-                          order.status === 'SHIPPED' ? 'bg-purple-100 text-purple-800' :
-                          order.status === 'DELIVERED' ? 'bg-green-100 text-green-800' :
-                          'bg-red-100 text-red-800'
-                        }`}>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(order.status)}`}>
                           {order.status}
                         </span>
                       </div>

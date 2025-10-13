@@ -1,48 +1,45 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Package, User, MapPin, Truck } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Edit, Trash2, Package, User, MapPin, CreditCard, Calendar, Phone, Mail } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { orderAPI } from '@/lib/api';
+import { Order, OrderStatusUpdate } from '@/lib/types';
+import { formatPrice, formatDate, getStatusBadgeColor, getOrderStatusIcon } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import api from '@/lib/api';
-import { Order } from '@/lib/types';
-import { formatPrice, formatDate, getStatusColor } from '@/lib/utils';
 
-export default function OrderDetailPage() {
-  const params = useParams();
+interface OrderDetailPageProps {
+  params: {
+    id: string;
+  };
+}
+
+export default function OrderDetailPage({ params }: OrderDetailPageProps) {
   const router = useRouter();
-  const orderId = params.id as string;
-  
+  const { toast } = useToast();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [trackingNumber, setTrackingNumber] = useState('');
-  const { toast } = useToast();
 
   useEffect(() => {
     fetchOrder();
-  }, [orderId]);
+  }, [params.id]);
 
   const fetchOrder = async () => {
     try {
-      // Since there's no direct admin endpoint for single order, we'll get all orders and filter
-      const response = await api.get('/orders/admin/all?limit=1000');
-      const orders = response.data.data?.orders || [];
-      const foundOrder = orders.find((o: Order) => o.id === orderId);
-      
-      if (foundOrder) {
-        setOrder(foundOrder);
-        setTrackingNumber(foundOrder.trackingNumber || '');
-      } else {
-        router.push('/admin/orders');
-      }
+      const response = await orderAPI.getOrderById(params.id);
+      setOrder(response.data.data);
     } catch (error) {
       console.error('Failed to fetch order:', error);
-      router.push('/admin/orders');
+      toast({
+        title: "Error",
+        description: "Failed to load order details",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -50,16 +47,31 @@ export default function OrderDetailPage() {
 
   const handleStatusUpdate = async (newStatus: string) => {
     if (!order) return;
-    
+
     setUpdating(true);
     try {
-      await api.put(`/orders/admin/${orderId}/status`, { status: newStatus });
-      setOrder({ ...order, status: newStatus as any });
-    } catch (error) {
-      console.error('Failed to update order status:', error);
+      const updateData: OrderStatusUpdate = {
+        status: newStatus as any,
+      };
+
+      // Add specific data based on status
+      if (newStatus === 'delivered') {
+        updateData.receivedAmount = order.amount;
+      }
+
+      const response = await orderAPI.updateOrderStatus(order._id, updateData);
+      setOrder(response.data.data);
+      
+      toast({
+        title: "Status Updated",
+        description: `Order status updated to ${newStatus}`,
+        variant: "default",
+      });
+    } catch (error: any) {
+      console.error('Failed to update status:', error);
       toast({
         title: "Update Failed",
-        description: "Failed to update order status. Please try again.",
+        description: error.response?.data?.message || 'Failed to update order status',
         variant: "destructive",
       });
     } finally {
@@ -67,18 +79,29 @@ export default function OrderDetailPage() {
     }
   };
 
-  const handleTrackingUpdate = async () => {
+  const handleDeleteOrder = async () => {
     if (!order) return;
-    
+
+    if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+      return;
+    }
+
     setUpdating(true);
     try {
-      await api.put(`/orders/admin/${orderId}/tracking`, { trackingNumber });
-      setOrder({ ...order, trackingNumber });
-    } catch (error) {
-      console.error('Failed to update tracking number:', error);
+      await orderAPI.deleteOrder(order._id, 'Deleted by admin');
+      
       toast({
-        title: "Update Failed",
-        description: "Failed to update tracking number. Please try again.",
+        title: "Order Deleted",
+        description: "Order has been successfully deleted",
+        variant: "default",
+      });
+
+      router.push('/admin/orders');
+    } catch (error: any) {
+      console.error('Failed to delete order:', error);
+      toast({
+        title: "Delete Failed",
+        description: error.response?.data?.message || 'Failed to delete order',
         variant: "destructive",
       });
     } finally {
@@ -89,202 +112,338 @@ export default function OrderDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading order...</div>
+        <div className="text-lg">Loading order details...</div>
       </div>
     );
   }
 
   if (!order) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Order not found</div>
+      <div className="text-center py-12">
+        <Package className="mx-auto h-12 w-12 text-gray-400" />
+        <h3 className="mt-2 text-sm font-medium text-black dark:text-white">Order not found</h3>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          The order you're looking for doesn't exist.
+        </p>
+        <div className="mt-4">
+          <Button onClick={() => router.push('/admin/orders')}>
+            Back to Orders
+          </Button>
+        </div>
       </div>
     );
   }
 
-  const orderStatuses = [
-    { value: 'PENDING', label: 'Pending' },
-    { value: 'PROCESSING', label: 'Processing' },
-    { value: 'SHIPPED', label: 'Shipped' },
-    { value: 'DELIVERED', label: 'Delivered' },
-    { value: 'CANCELLED', label: 'Cancelled' },
+  const statusOptions = [
+    { value: 'pending', label: 'Pending' },
+    { value: 'confirmed', label: 'Confirmed' },
+    { value: 'shipped', label: 'Shipped' },
+    { value: 'delivered', label: 'Delivered' },
+    { value: 'received', label: 'Received' },
+    { value: 'cancelled', label: 'Cancelled' },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button variant="outline" onClick={() => router.push('/admin/orders')}>
+          <Button variant="outline" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-black dark:text-white">
-              Order #{order.id.slice(-8)}
+              Order {order.orderNumber}
             </h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Placed on {formatDate(order.createdAt)}
+              Created on {formatDate(order.createdAt)}
             </p>
           </div>
         </div>
-        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
-          {order.status}
-        </span>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={() => router.push(`/admin/orders/${order._id}/edit`)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Edit
+          </Button>
+          <Button variant="destructive" onClick={handleDeleteOrder} disabled={updating}>
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Order Details */}
+        {/* Order Information */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Product Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Package className="h-5 w-5 mr-2" />
+                Product Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Product Name</Label>
+                  <p className="text-lg font-medium text-black dark:text-white">{order.productName}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Product ID</Label>
+                  <p className="text-lg font-medium text-black dark:text-white">{order.productId}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Order Amount</Label>
+                  <p className="text-lg font-medium text-black dark:text-white">{formatPrice(order.amount)}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Received Amount</Label>
+                  <p className="text-lg font-medium text-green-600 dark:text-green-400">
+                    {formatPrice(order.receivedAmount)}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Date of Departure</Label>
+                  <p className="text-lg font-medium text-black dark:text-white">
+                    {formatDate(order.dateOfDeparture)}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Order Age</Label>
+                  <p className="text-lg font-medium text-black dark:text-white">
+                    {order.orderAge || 0} days
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Customer Information */}
-          <div className="bg-white dark:bg-[#1a1a1a] shadow rounded-lg p-6 border border-gray-300 dark:border-gray-500">
-            <div className="flex items-center mb-4">
-              <User className="h-5 w-5 text-gray-400 mr-2" />
-              <h3 className="text-lg font-medium text-black dark:text-white">Customer Information</h3>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Name</dt>
-                <dd className="mt-1 text-sm text-black dark:text-white">{order.user?.name || 'N/A'}</dd>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <User className="h-5 w-5 mr-2" />
+                Customer Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Customer Name</Label>
+                  <p className="text-lg font-medium text-black dark:text-white">{order.customerInfo.name}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Phone Number</Label>
+                  <p className="text-lg font-medium text-black dark:text-white">{order.customerInfo.phone}</p>
+                </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Address</Label>
+                  <p className="text-lg font-medium text-black dark:text-white">{order.customerInfo.address}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Pincode: {order.customerInfo.pincode}</p>
+                </div>
               </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Email</dt>
-                <dd className="mt-1 text-sm text-black dark:text-white">{order.user?.email}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Phone</dt>
-                <dd className="mt-1 text-sm text-black dark:text-white">{order.user?.phone || 'N/A'}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Role</dt>
-                <dd className="mt-1 text-sm text-black dark:text-white">{order.user?.role}</dd>
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Shipping Information */}
-          {order.shippingAddress && (
-            <div className="bg-white dark:bg-[#1a1a1a] shadow rounded-lg p-6 border border-gray-300 dark:border-gray-500">
-              <div className="flex items-center mb-4">
-                <MapPin className="h-5 w-5 text-gray-400 mr-2" />
-                <h3 className="text-lg font-medium text-black dark:text-white">Shipping Address</h3>
-              </div>
-              <p className="text-sm text-black dark:text-white">{order.shippingAddress}</p>
-            </div>
+          {order.shippingInfo && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <MapPin className="h-5 w-5 mr-2" />
+                  Shipping Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {order.shippingInfo.trackingNumber && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Tracking Number</Label>
+                      <p className="text-lg font-medium text-black dark:text-white">
+                        {order.shippingInfo.trackingNumber}
+                      </p>
+                    </div>
+                  )}
+                  {order.shippingInfo.courierService && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Courier Service</Label>
+                      <p className="text-lg font-medium text-black dark:text-white">
+                        {order.shippingInfo.courierService}
+                      </p>
+                    </div>
+                  )}
+                  {order.shippingInfo.estimatedDelivery && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Estimated Delivery</Label>
+                      <p className="text-lg font-medium text-black dark:text-white">
+                        {formatDate(order.shippingInfo.estimatedDelivery)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           )}
 
-          {/* Order Items */}
-          <div className="bg-white dark:bg-[#1a1a1a] shadow rounded-lg p-6 border border-gray-300 dark:border-gray-500">
-            <div className="flex items-center mb-4">
-              <Package className="h-5 w-5 text-gray-400 mr-2" />
-              <h3 className="text-lg font-medium text-black dark:text-white">Order Items</h3>
-            </div>
-            <div className="space-y-4">
-              {order.items.map((item) => (
-                <div key={item.id} className="flex items-center space-x-4 border-b border-gray-200 dark:border-gray-500 pb-4">
-                  <img
-                    className="h-16 w-16 rounded-lg object-cover"
-                    src={item.product.imageUrl}
-                    alt={item.product.name}
-                  />
-                  <div className="flex-1">
-                    <h4 className="text-sm font-medium text-black dark:text-white">{item.product.name}</h4>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Quantity: {item.quantity}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Price: {formatPrice(item.price)}</p>
-                  </div>
-                  <div className="text-sm font-medium text-black dark:text-white">
-                    {formatPrice(item.price * item.quantity)}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-500">
-              <div className="flex justify-between text-lg font-medium text-black dark:text-white">
-                <span>Total</span>
-                <span>{formatPrice(order.total)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Order Management */}
-        <div className="space-y-6">
-          {/* Status Update */}
-          <div className="bg-white dark:bg-[#1a1a1a] shadow rounded-lg p-6 border border-gray-300 dark:border-gray-500">
-            <h3 className="text-lg font-medium text-black dark:text-white mb-4">Order Status</h3>
-            <Select value={order.status} onValueChange={handleStatusUpdate} disabled={updating}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                {orderStatuses.map((status) => (
-                  <SelectItem key={status.value} value={status.value}>
-                    {status.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Tracking Information */}
-          <div className="bg-white dark:bg-[#1a1a1a] shadow rounded-lg p-6 border border-gray-300 dark:border-gray-500">
-            <div className="flex items-center mb-4">
-              <Truck className="h-5 w-5 text-gray-400 mr-2" />
-              <h3 className="text-lg font-medium text-black dark:text-white">Tracking Information</h3>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="tracking">Tracking Number</Label>
-                <Input
-                  id="tracking"
-                  value={trackingNumber}
-                  onChange={(e) => setTrackingNumber(e.target.value)}
-                  placeholder="Enter tracking number"
-                  className="mt-1"
-                />
-              </div>
-              <Button
-                onClick={handleTrackingUpdate}
-                disabled={updating || !trackingNumber}
-                className="w-full"
-              >
-                {updating ? 'Updating...' : 'Update Tracking'}
-              </Button>
-            </div>
-          </div>
-
           {/* Payment Information */}
-          {order.payment && (
-            <div className="bg-white dark:bg-[#1a1a1a] shadow rounded-lg p-6 border border-gray-300 dark:border-gray-500">
-              <h3 className="text-lg font-medium text-black dark:text-white mb-4">Payment Information</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">Amount</span>
-                  <span className="text-sm font-medium text-black dark:text-white">{formatPrice(order.payment.amount)}</span>
+          {order.paymentInfo && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <CreditCard className="h-5 w-5 mr-2" />
+                  Payment Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Payment Method</Label>
+                    <p className="text-lg font-medium text-black dark:text-white capitalize">
+                      {order.paymentInfo.paymentMethod}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Payment Status</Label>
+                    <p className="text-lg font-medium text-black dark:text-white capitalize">
+                      {order.paymentInfo.paymentStatus}
+                    </p>
+                  </div>
+                  {order.paymentInfo.transactionId && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Transaction ID</Label>
+                      <p className="text-lg font-medium text-black dark:text-white">
+                        {order.paymentInfo.transactionId}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">Method</span>
-                  <span className="text-sm font-medium text-black dark:text-white">{order.payment.method}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">Status</span>
-                  <span className={`text-sm font-medium ${
-                    order.payment.status === 'COMPLETED' ? 'text-green-600' :
-                    order.payment.status === 'PENDING' ? 'text-yellow-600' :
-                    order.payment.status === 'FAILED' ? 'text-red-600' : 'text-gray-600'
-                  }`}>
-                    {order.payment.status}
-                  </span>
-                </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Notes */}
           {order.notes && (
-            <div className="bg-white dark:bg-[#1a1a1a] shadow rounded-lg p-6 border border-gray-300 dark:border-gray-500">
-              <h3 className="text-lg font-medium text-black dark:text-white mb-4">Order Notes</h3>
-              <p className="text-sm text-black dark:text-white">{order.notes}</p>
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Notes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700 dark:text-gray-300">{order.notes}</p>
+              </CardContent>
+            </Card>
           )}
+
+          {/* Cancellation Information */}
+          {order.status === 'cancelled' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-red-600 dark:text-red-400">Cancellation Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Cancelled By</Label>
+                    <p className="text-lg font-medium text-black dark:text-white capitalize">
+                      {order.cancelledBy || 'Unknown'}
+                    </p>
+                  </div>
+                  {order.cancelledAt && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Cancelled At</Label>
+                      <p className="text-lg font-medium text-black dark:text-white">
+                        {formatDate(order.cancelledAt)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                {order.cancellationReason && (
+                  <div>
+                    <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Reason</Label>
+                    <p className="text-gray-700 dark:text-gray-300">{order.cancellationReason}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Order Actions */}
+        <div className="space-y-6">
+          {/* Status Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Order Status</CardTitle>
+              <CardDescription>
+                Update the order status
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-center">
+                <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor(order.status)}`}>
+                  <span className="mr-2">{getOrderStatusIcon(order.status)}</span>
+                  {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="status">Change Status</Label>
+                <Select 
+                  value={order.status} 
+                  onValueChange={handleStatusUpdate}
+                  disabled={updating}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((status) => (
+                      <SelectItem key={status.value} value={status.value}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Order Summary */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Order Summary</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Order Number:</span>
+                <span className="font-medium">{order.orderNumber}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Created:</span>
+                <span className="font-medium">{formatDate(order.createdAt)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Last Updated:</span>
+                <span className="font-medium">{formatDate(order.updatedAt)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Order Amount:</span>
+                <span className="font-medium">{formatPrice(order.amount)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Received:</span>
+                <span className="font-medium text-green-600 dark:text-green-400">
+                  {formatPrice(order.receivedAmount)}
+                </span>
+              </div>
+              <hr className="border-gray-200 dark:border-gray-600" />
+              <div className="flex justify-between font-semibold">
+                <span>Outstanding:</span>
+                <span className="text-orange-600 dark:text-orange-400">
+                  {formatPrice(order.amount - order.receivedAmount)}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

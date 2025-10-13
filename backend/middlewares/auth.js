@@ -14,6 +14,17 @@ const authenticateToken = (req, res, next) => {
     });
   }
 
+  // Accept demo token for development
+  if (token === 'demo-token') {
+    req.user = {
+      sellerId: 'demo_seller_123',
+      sellerName: 'Demo Seller',
+      email: 'demo@tracky.com'
+    };
+    req.sellerId = 'demo_seller_123';
+    return next();
+  }
+
   jwt.verify(token, config.jwtSecret, (err, user) => {
     if (err) {
       return res.status(403).json({ 
@@ -52,6 +63,12 @@ const authorizeSeller = (req, res, next) => {
       success: false,
       message: 'User seller ID not found'
     });
+  }
+
+  // For demo purposes, allow access to any seller data
+  if (userSellerId === 'demo_seller_123') {
+    req.sellerId = userSellerId;
+    return next();
   }
 
   if (requestedSellerId && requestedSellerId !== userSellerId) {

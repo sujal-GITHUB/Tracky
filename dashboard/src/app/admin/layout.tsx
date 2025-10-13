@@ -19,15 +19,14 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useDarkMode } from '../../providers/DarkModeProvider';
 import { Toaster } from '@/components/ui/toaster';
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
-  { name: 'Products', href: '/admin/products', icon: Package },
   { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
-  { name: 'Users', href: '/admin/users', icon: Users },
+  { name: 'Create Order', href: '/admin/orders/create', icon: Package },
+  { name: 'Analytics', href: '/admin/analytics', icon: Users },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
@@ -42,12 +41,11 @@ export default function AdminLayout({
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    window.location.href = '/login';
+    localStorage.removeItem('trackyToken');
+    window.location.href = '/admin';
   };
 
   return (
-    <ProtectedRoute>
     <div className="h-screen flex overflow-hidden bg-white dark:bg-black">
       {/* Mobile sidebar */}
       <div className={cn(
@@ -66,7 +64,7 @@ export default function AdminLayout({
           </div>
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
             <div className="flex-shrink-0 flex items-center justify-between px-4">
-              <h1 className="text-xl font-bold text-black dark:text-white ">Admin Panel</h1>
+              <h1 className="text-xl font-bold text-black dark:text-white ">Tracky Admin</h1>
               <button
                 onClick={toggleDarkMode}
                 className="p-2 rounded-md text-black dark:text-white transition-colors"
@@ -105,7 +103,7 @@ export default function AdminLayout({
             <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
               <div className="flex items-center justify-between flex-shrink-0 px-4">
                 {!sidebarCollapsed && (
-                  <h1 className="text-xl font-bold text-black dark:text-white">Admin Panel</h1>
+                  <h1 className="text-xl font-bold text-black dark:text-white">Tracky Admin</h1>
                 )}
                 {sidebarCollapsed ? (
                   <div className="flex flex-col space-y-2">
@@ -203,6 +201,5 @@ export default function AdminLayout({
       </div>
       <Toaster />
     </div>
-    </ProtectedRoute>
   );
 }

@@ -10,8 +10,8 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "Admin Panel - Getsugatenshou",
-  description: "Admin panel for Getsugatenshou",
+  title: "Tracky Order Management",
+  description: "Order management system for Tracky sellers",
 };
 
 export default function RootLayout({

@@ -3,13 +3,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, Package, Search, ArrowLeft } from 'lucide-react';
+import { Eye, Package, Search, ArrowLeft, Plus, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import api from '@/lib/api';
-import { Order } from '@/lib/types';
-import { formatPrice, formatDate, getStatusColor } from '@/lib/utils';
+import { orderAPI } from '@/lib/api';
+import { Order, OrderFilters } from '@/lib/types';
+import { formatPrice, formatDate, getStatusBadgeColor, debounce } from '@/lib/utils';
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -17,15 +17,17 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [filters, setFilters] = useState<OrderFilters>({});
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [filters]);
 
   const fetchOrders = async () => {
     try {
-      const response = await api.get('/orders/admin/all?limit=100');
-      setOrders(response.data.data?.orders || []);
+      setLoading(true);
+      const response = await orderAPI.getOrders(filters);
+      setOrders(response.data.data || []);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
     } finally {
@@ -33,21 +35,46 @@ export default function OrdersPage() {
     }
   };
 
+  const debouncedSearch = debounce((term: string) => {
+    if (term.trim()) {
+      orderAPI.searchOrders(term).then(response => {
+        setOrders(response.data.data || []);
+      }).catch(error => {
+        console.error('Search failed:', error);
+      });
+    } else {
+      fetchOrders();
+    }
+  }, 300);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    debouncedSearch(value);
+  };
+
+  const handleStatusFilter = (status: string) => {
+    setStatusFilter(status);
+    if (status === 'all') {
+      setFilters({ ...filters, status: undefined });
+    } else {
+      setFilters({ ...filters, status: status as any });
+    }
+  };
+
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.user?.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = !statusFilter || statusFilter === 'all' || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return matchesStatus;
   });
 
   const orderStatuses = [
     { value: 'all', label: 'All Statuses' },
-    { value: 'PENDING', label: 'Pending' },
-    { value: 'PROCESSING', label: 'Processing' },
-    { value: 'SHIPPED', label: 'Shipped' },
-    { value: 'DELIVERED', label: 'Delivered' },
-    { value: 'CANCELLED', label: 'Cancelled' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'confirmed', label: 'Confirmed' },
+    { value: 'shipped', label: 'Shipped' },
+    { value: 'delivered', label: 'Delivered' },
+    { value: 'received', label: 'Received' },
+    { value: 'cancelled', label: 'Cancelled' },
   ];
 
   if (loading) {
@@ -60,16 +87,24 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-4">
-        <Button variant="outline" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-black dark:text-white">Orders</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage customer orders and fulfillment
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button variant="outline" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-black dark:text-white">Orders</h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Manage and track your orders
+            </p>
+          </div>
         </div>
+        <Link href="/admin/orders/create">
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Order
+          </Button>
+        </Link>
       </div>
 
       {/* Filters */}
@@ -80,11 +115,11 @@ export default function OrdersPage() {
             <Input
               placeholder="Search orders..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className="pl-10"
             />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <Select value={statusFilter} onValueChange={handleStatusFilter}>
             <SelectTrigger>
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
@@ -96,6 +131,10 @@ export default function OrdersPage() {
               ))}
             </SelectContent>
           </Select>
+          <div className="flex items-center space-x-2">
+            <Filter className="h-4 w-4 text-gray-400" />
+            <span className="text-sm text-gray-500">Filters</span>
+          </div>
         </div>
       </div>
 
@@ -105,13 +144,23 @@ export default function OrdersPage() {
             <Package className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-black dark:text-white">No orders found</h3>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {searchTerm || statusFilter ? 'Try adjusting your filters.' : 'Orders will appear here when customers place them.'}
+              {searchTerm || statusFilter !== 'all' ? 'Try adjusting your filters.' : 'Orders will appear here when you create them.'}
             </p>
+            {!searchTerm && statusFilter === 'all' && (
+              <div className="mt-4">
+                <Link href="/admin/orders/create">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create Your First Order
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         ) : (
           <ul className="divide-y divide-gray-200 dark:divide-gray-500">
             {filteredOrders.map((order) => (
-              <li key={order.id}>
+              <li key={order._id}>
                 <div className="px-4 py-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
@@ -122,21 +171,26 @@ export default function OrdersPage() {
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-black dark:text-white">
-                          Order #{order.id.slice(-8)}
+                          {order.orderNumber}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {order.user?.name || order.user?.email} • {formatDate(order.createdAt)}
+                          {order.productName} • {formatPrice(order.amount)}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {order.items.length} item{order.items.length !== 1 ? 's' : ''} • {formatPrice(order.total)}
+                          {order.customerInfo.name} • {formatDate(order.createdAt)}
                         </div>
+                        {order.receivedAmount > 0 && (
+                          <div className="text-sm text-green-600 dark:text-green-400">
+                            Received: {formatPrice(order.receivedAmount)}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeColor(order.status)}`}>
                         {order.status}
                       </span>
-                      <Link href={`/admin/orders/${order.id}`}>
+                      <Link href={`/admin/orders/${order._id}`}>
                         <Button variant="outline" size="sm">
                           <Eye className="h-4 w-4 mr-1" />
                           View
@@ -144,14 +198,14 @@ export default function OrdersPage() {
                       </Link>
                     </div>
                   </div>
-                  {order.shippingAddress && (
+                  {order.shippingInfo?.trackingNumber && (
                     <div className="mt-2 text-sm text-gray-500">
-                      <strong>Ship to:</strong> {order.shippingAddress}
+                      <strong>Tracking:</strong> {order.shippingInfo.trackingNumber}
                     </div>
                   )}
-                  {order.trackingNumber && (
+                  {order.customerInfo.address && (
                     <div className="mt-1 text-sm text-gray-500">
-                      <strong>Tracking:</strong> {order.trackingNumber}
+                      <strong>Address:</strong> {order.customerInfo.address}, {order.customerInfo.pincode}
                     </div>
                   )}
                 </div>

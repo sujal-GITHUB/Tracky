@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "test": "jest",
     "demo": "node demo.js",
-    "generate-token": "node utils/authHelper.js"
+    "generate-token": "node utils/authHelper.js",
+    "seed": "node seed.js"
   },
   "keywords": [
     "order-management",
