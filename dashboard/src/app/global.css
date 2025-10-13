@@ -1,0 +1,20 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Hurricane&family=Inconsolata:wght@200..900&family=Italianno&family=Lexend:wght@100..900&family=Manrope:wght@200..800&family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+@theme {
+  /* Default Tailwind fonts */
+  --font-sans: "Manrope", sans-serif;
+  --font-mono: "Inconsolata", monospace;
+
+  /* Custom Google fonts → now usable as utilities */
+  --font-lexend: "Lexend", sans-serif;
+  --font-italianno: "Italianno", cursive;
+  --font-pt-sans: "PT Sans", sans-serif;
+  --font-hurricane: "Hurricane", cursive;
+}
+
+body {
+  font-family: var(--font-sans); /* Default = Manrope */
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
