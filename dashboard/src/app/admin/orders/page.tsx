@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { orderAPI } from '@/lib/api';
 import { Order, OrderFilters } from '@/lib/types';
 import { formatPrice, formatDate, getStatusBadgeColor, debounce } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function OrdersPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,6 +32,11 @@ export default function OrdersPage() {
       setOrders(response.data.data || []);
     } catch (error) {
       console.error('Failed to fetch orders:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load orders",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -41,6 +48,11 @@ export default function OrdersPage() {
         setOrders(response.data.data || []);
       }).catch(error => {
         console.error('Search failed:', error);
+        toast({
+          title: "Search Error",
+          description: "Failed to search orders",
+          variant: "destructive",
+        });
       });
     } else {
       fetchOrders();

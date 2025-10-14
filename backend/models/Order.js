@@ -25,6 +25,26 @@ const orderSchema = new mongoose.Schema({
     enum: ['pending', 'delivered', 'cancelled'],
     default: 'pending'
   },
+  statusHistory: [{
+    status: {
+      type: String,
+      enum: ['pending', 'delivered', 'cancelled'],
+      required: true
+    },
+    changedAt: {
+      type: Date,
+      default: Date.now
+    },
+    changedBy: {
+      type: String,
+      enum: ['customer', 'seller', 'admin', 'system'],
+      default: 'system'
+    },
+    reason: {
+      type: String,
+      trim: true
+    }
+  }],
   amount: {
     type: Number,
     required: true,
@@ -34,6 +54,29 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0
+  },
+  paymentSubstate: {
+    isPaid: {
+      type: Boolean,
+      default: false
+    },
+    paidAmount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    paymentDate: {
+      type: Date
+    },
+    paymentMethod: {
+      type: String,
+      enum: ['cash', 'bank_transfer', 'card', 'digital_wallet', 'other'],
+      trim: true
+    },
+    paymentReference: {
+      type: String,
+      trim: true
+    }
   },
   sellerInfo: {
     sellerId: {
@@ -123,7 +166,24 @@ orderSchema.virtual('isCancelled').get(function() {
 
 // Virtual for payment status
 orderSchema.virtual('isPaymentReceived').get(function() {
-  return this.receivedAmount > 0;
+  return this.paymentSubstate.isPaid;
+});
+
+// Virtual for payment status text
+orderSchema.virtual('paymentStatusText').get(function() {
+  if (this.status === 'pending') {
+    return 'Pending';
+  }
+  return this.paymentSubstate.isPaid ? 'Paid' : 'Unpaid';
+});
+
+// Virtual for last status change date
+orderSchema.virtual('lastStatusChange').get(function() {
+  if (this.statusHistory && this.statusHistory.length > 0) {
+    const latest = this.statusHistory.sort((a, b) => b.changedAt - a.changedAt)[0];
+    return latest.changedAt;
+  }
+  return this.createdAt;
 });
 
 // Pre-save middleware to generate order number if not provided
@@ -154,6 +214,105 @@ orderSchema.statics.getOrderStats = function(sellerId) {
       }
     }
   ]);
+};
+
+// Instance method to change order status
+orderSchema.methods.changeStatus = function(newStatus, changedBy = 'system', reason = null) {
+  // Validate status transition
+  const validTransitions = {
+    'pending': ['delivered', 'cancelled'],
+    'delivered': ['pending', 'cancelled'],
+    'cancelled': ['pending', 'delivered']
+  };
+
+  if (!validTransitions[this.status].includes(newStatus)) {
+    throw new Error(`Invalid status transition from ${this.status} to ${newStatus}`);
+  }
+
+  // Add current status to history before changing
+  this.statusHistory.push({
+    status: this.status,
+    changedAt: new Date(),
+    changedBy: changedBy,
+    reason: reason
+  });
+
+  // Update status
+  this.status = newStatus;
+
+  // Reset payment substate when changing to delivered or cancelled
+  if (newStatus === 'delivered' || newStatus === 'cancelled') {
+    this.paymentSubstate.isPaid = false;
+    this.paymentSubstate.paidAmount = 0;
+    this.paymentSubstate.paymentDate = null;
+    this.paymentSubstate.paymentMethod = null;
+    this.paymentSubstate.paymentReference = null;
+  }
+
+  return this.save();
+};
+
+// Instance method to mark payment as received
+orderSchema.methods.markPaymentReceived = function(amount, paymentMethod = null, paymentReference = null) {
+  // Check if order is in delivered or cancelled state
+  if (this.status !== 'delivered' && this.status !== 'cancelled') {
+    throw new Error('Payment can only be marked for delivered or cancelled orders');
+  }
+
+  // Validate amount
+  if (amount <= 0) {
+    throw new Error('Payment amount must be greater than 0');
+  }
+
+  if (amount > this.amount) {
+    throw new Error('Payment amount cannot exceed order amount');
+  }
+
+  // Update payment substate
+  this.paymentSubstate.isPaid = true;
+  this.paymentSubstate.paidAmount = amount;
+  this.paymentSubstate.paymentDate = new Date();
+  this.paymentSubstate.paymentMethod = paymentMethod;
+  this.paymentSubstate.paymentReference = paymentReference;
+
+  // Update received amount
+  this.receivedAmount = amount;
+
+  return this.save();
+};
+
+// Instance method to mark payment as not received
+orderSchema.methods.markPaymentNotReceived = function() {
+  // Check if order is in delivered or cancelled state
+  if (this.status !== 'delivered' && this.status !== 'cancelled') {
+    throw new Error('Payment status can only be changed for delivered or cancelled orders');
+  }
+
+  // Reset payment substate
+  this.paymentSubstate.isPaid = false;
+  this.paymentSubstate.paidAmount = 0;
+  this.paymentSubstate.paymentDate = null;
+  this.paymentSubstate.paymentMethod = null;
+  this.paymentSubstate.paymentReference = null;
+
+  // Reset received amount
+  this.receivedAmount = 0;
+
+  return this.save();
+};
+
+// Instance method to get current payment status
+orderSchema.methods.getPaymentStatus = function() {
+  if (this.status === 'pending') {
+    return 'pending';
+  }
+  
+  return this.paymentSubstate.isPaid ? 'paid' : 'unpaid';
+};
+
+// Instance method to get status change history
+orderSchema.methods.getStatusHistory = function() {
+  return this.statusHistory.sort((a, b) => b.changedAt - a.changedAt);
 };
 
 module.exports = mongoose.model('Order', orderSchema);

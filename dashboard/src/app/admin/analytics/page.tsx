@@ -29,6 +29,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { orderAPI } from '@/lib/api';
 import { OrderStats } from '@/lib/types';
 import { formatPrice } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D'];
 

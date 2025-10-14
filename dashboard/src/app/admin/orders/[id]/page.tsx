@@ -388,15 +388,6 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                         <CheckCircle className="w-4 h-4 mr-2" />
                         Mark Payment Received
                       </Button>
-                      <Button
-                        onClick={() => handleTogglePayment(0)}
-                        disabled={updating || order.receivedAmount === 0}
-                        size="sm"
-                        variant="outline"
-                      >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Mark Payment Not Received
-                      </Button>
                     </div>
                   )}
                 </div>

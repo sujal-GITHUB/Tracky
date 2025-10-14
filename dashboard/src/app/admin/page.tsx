@@ -15,8 +15,10 @@ import {
 import { orderAPI } from '@/lib/api';
 import { OrderStats, Order } from '@/lib/types';
 import { formatPrice, formatDate, getStatusBadgeColor } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
+  const { toast } = useToast();
   const [stats, setStats] = useState<OrderStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
@@ -33,6 +35,11 @@ export default function AdminDashboard() {
         setRecentOrders(recentOrdersResponse.data.data);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
