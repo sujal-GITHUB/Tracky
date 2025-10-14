@@ -218,15 +218,15 @@ orderSchema.statics.getOrderStats = function(sellerId) {
 
 // Instance method to change order status
 orderSchema.methods.changeStatus = function(newStatus, changedBy = 'system', reason = null) {
-  // Validate status transition
+  // Validate status transition - once delivered or cancelled, cannot change to the other final state
   const validTransitions = {
     'pending': ['delivered', 'cancelled'],
-    'delivered': ['pending', 'cancelled'],
-    'cancelled': ['pending', 'delivered']
+    'delivered': ['pending'], // Can only go back to pending, not to cancelled
+    'cancelled': ['pending']  // Can only go back to pending, not to delivered
   };
 
   if (!validTransitions[this.status].includes(newStatus)) {
-    throw new Error(`Invalid status transition from ${this.status} to ${newStatus}`);
+    throw new Error(`Invalid status transition from ${this.status} to ${newStatus}. Once an order is ${this.status}, it cannot be changed to ${newStatus === 'delivered' ? 'cancelled' : 'delivered'}.`);
   }
 
   // Add current status to history before changing

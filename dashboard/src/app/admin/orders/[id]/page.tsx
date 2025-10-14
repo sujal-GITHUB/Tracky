@@ -27,9 +27,11 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [showPaymentAmountDialog, setShowPaymentAmountDialog] = useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<string | null>(null);
   const [paymentReceived, setPaymentReceived] = useState(false);
   const [receivedAmount, setReceivedAmount] = useState(0);
+  const [paymentAmount, setPaymentAmount] = useState(0);
   const [cancellationReason, setCancellationReason] = useState('');
   const [orderId, setOrderId] = useState<string>('');
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -147,6 +149,48 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
       toast({
         title: "Update Failed",
         description: error.response?.data?.message || 'Failed to update payment status',
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!order || paymentAmount <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid payment amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (paymentAmount > order.amount) {
+      toast({
+        title: "Invalid Amount",
+        description: "Payment amount cannot exceed order amount",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUpdating(true);
+    try {
+      const response = await orderAPI.togglePaymentStatus(order._id, paymentAmount);
+      setOrder(response.data.data);
+      setShowPaymentAmountDialog(false);
+      
+      toast({
+        title: "Payment Marked",
+        description: `Payment of ${formatPrice(paymentAmount)} marked as received`,
+        variant: "default",
+      });
+    } catch (error: any) {
+      console.error('Failed to mark payment:', error);
+      toast({
+        title: "Update Failed",
+        description: error.response?.data?.message || 'Failed to mark payment',
         variant: "destructive",
       });
     } finally {
@@ -380,8 +424,11 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                   {(order.status === 'delivered' || order.status === 'cancelled') && (
                     <div className="flex gap-2 mt-2">
                       <Button
-                        onClick={() => handleTogglePayment(order.amount)}
-                        disabled={updating || order.receivedAmount === order.amount}
+                        onClick={() => {
+                          setPaymentAmount(order.amount);
+                          setShowPaymentAmountDialog(true);
+                        }}
+                        disabled={updating}
                         size="sm"
                         className="bg-green-600 hover:bg-green-700"
                       >
@@ -574,24 +621,24 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                   )}
                   {order.status === 'delivered' && (
                     <Button
-                      onClick={() => handleStatusToggle('cancelled')}
+                      onClick={() => handleStatusToggle('pending')}
                       disabled={updating}
-                      variant="destructive"
+                      variant="outline"
                       size="sm"
                     >
-                      <XCircle className="w-4 h-4 mr-2" />
-                      Cancel Order
+                      <Package className="w-4 h-4 mr-2" />
+                      Revert to Pending
                     </Button>
                   )}
                   {order.status === 'cancelled' && (
                     <Button
-                      onClick={() => handleStatusToggle('delivered')}
+                      onClick={() => handleStatusToggle('pending')}
                       disabled={updating}
-                      className="bg-green-600 hover:bg-green-700"
+                      variant="outline"
                       size="sm"
                     >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Mark as Delivered
+                      <Package className="w-4 h-4 mr-2" />
+                      Revert to Pending
                     </Button>
                   )}
                 </div>
