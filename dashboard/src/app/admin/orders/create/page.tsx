@@ -24,8 +24,8 @@ export default function CreateOrderPage() {
     dateOfDeparture: '',
     amount: 0,
     sellerInfo: {
-      sellerId: 'seller_123', // Default seller ID
-      sellerName: 'Tracky Store'
+      sellerId: '',
+      sellerName: ''
     },
     paymentInfo: {
       paymentMethod: 'cod',
@@ -40,7 +40,7 @@ export default function CreateOrderPage() {
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...prev[parent as keyof typeof prev],
+          ...(prev[parent as keyof typeof prev] as any),
           [child]: value
         }
       }));
@@ -94,7 +94,7 @@ export default function CreateOrderPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6">
           {/* Product Information */}
           <Card>
             <CardHeader>
@@ -156,6 +156,44 @@ export default function CreateOrderPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Seller Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <User className="h-5 w-5 mr-2" />
+              Seller Information
+            </CardTitle>
+            <CardDescription>
+              Enter seller details for this order
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="sellerId">Seller ID *</Label>
+                <Input
+                  id="sellerId"
+                  value={formData.sellerInfo?.sellerId || ''}
+                  onChange={(e) => handleInputChange('sellerInfo.sellerId', e.target.value)}
+                  placeholder="Enter seller ID"
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="sellerName">Seller Name *</Label>
+                <Input
+                  id="sellerName"
+                  value={formData.sellerInfo?.sellerName || ''}
+                  onChange={(e) => handleInputChange('sellerInfo.sellerName', e.target.value)}
+                  placeholder="Enter seller name"
+                  required
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Payment Information */}
         <Card>

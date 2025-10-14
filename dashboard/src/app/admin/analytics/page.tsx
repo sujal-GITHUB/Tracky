@@ -77,8 +77,7 @@ export default function AnalyticsPage() {
   ];
 
   const revenueData = [
-    { name: 'Total Revenue', amount: stats?.totalAmount || 0 },
-    { name: 'Received Amount', amount: stats?.totalReceivedAmount || 0 },
+    { name: 'Received Revenue', amount: stats?.totalReceivedAmount || 0 },
     { name: 'Outstanding', amount: (stats?.totalAmount || 0) - (stats?.totalReceivedAmount || 0) },
   ];
 
@@ -101,13 +100,13 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium">Received Revenue</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatPrice(stats?.totalAmount || 0)}</div>
+            <div className="text-2xl font-bold">{formatPrice(stats?.totalReceivedAmount || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+12.5%</span> from last month
+              Actual received revenue
             </p>
           </CardContent>
         </Card>
@@ -122,7 +121,7 @@ export default function AnalyticsPage() {
               {stats?.deliveredOrders || 0}
             </div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+8.2%</span> completion rate
+              Delivered orders count
             </p>
           </CardContent>
         </Card>
@@ -135,7 +134,7 @@ export default function AnalyticsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{formatPrice(stats?.averageOrderValue || 0)}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600">+5.4%</span> from last month
+              Average order value
             </p>
           </CardContent>
         </Card>
@@ -148,7 +147,7 @@ export default function AnalyticsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{cancellationRate.toFixed(1)}%</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-red-600">-2.1%</span> from last month
+              Cancellation rate
             </p>
           </CardContent>
         </Card>
@@ -279,8 +278,8 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Total Revenue</span>
-              <span className="text-sm font-bold">{formatPrice(stats?.totalAmount || 0)}</span>
+              <span className="text-sm font-medium">Received Revenue</span>
+              <span className="text-sm font-bold">{formatPrice(stats?.totalReceivedAmount || 0)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Received Amount</span>

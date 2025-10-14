@@ -64,16 +64,10 @@ export default function AdminDashboard() {
       color: 'bg-blue-500',
     },
     {
-      name: 'Total Revenue',
-      value: formatPrice(stats?.totalAmount || 0),
+      name: 'Received Revenue',
+      value: formatPrice(stats?.totalReceivedAmount || 0),
       icon: DollarSign,
       color: 'bg-green-500',
-    },
-    {
-      name: 'Received Amount',
-      value: formatPrice(stats?.totalReceivedAmount || 0),
-      icon: CheckCircle,
-      color: 'bg-emerald-500',
     },
     {
       name: 'Pending Orders',
@@ -105,7 +99,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {statCards.map((stat) => (
           <div key={stat.name} className="bg-white dark:bg-[#1a1a1a] overflow-hidden shadow rounded-lg border border-gray-300 dark:border-gray-500">
             <div className="p-5">
