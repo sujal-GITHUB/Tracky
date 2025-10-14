@@ -28,7 +28,7 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await orderAPI.getOrders(filters);
+      const response = await orderAPI.getOrders({ ...filters, sellerId: 'admin_001' });
       setOrders(response.data.data || []);
     } catch (error) {
       console.error('Failed to fetch orders:', error);

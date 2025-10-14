@@ -63,14 +63,15 @@ export const orderAPI = {
   getOrdersByStatus: (status: string) => api.get(`/status/${status}`),
   
   // Get recent orders
-  getRecentOrders: (limit = 20) => api.get(`/recent?limit=${limit}`),
+  getRecentOrders: (limit = 20, sellerId = 'admin_001') => api.get(`/recent?limit=${limit}&sellerId=${sellerId}`),
   
   // Get order statistics
-  getOrderStatistics: (dateRange?: { from?: string; to?: string }) => {
-    const params = new URLSearchParams();
-    if (dateRange?.from) params.append('dateFrom', dateRange.from);
-    if (dateRange?.to) params.append('dateTo', dateRange.to);
-    return api.get(`/statistics?${params.toString()}`);
+  getOrderStatistics: (params?: { from?: string; to?: string; sellerId?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.from) searchParams.append('dateFrom', params.from);
+    if (params?.to) searchParams.append('dateTo', params.to);
+    if (params?.sellerId) searchParams.append('sellerId', params.sellerId);
+    return api.get(`/statistics?${searchParams.toString()}`);
   },
   
   // Bulk update orders

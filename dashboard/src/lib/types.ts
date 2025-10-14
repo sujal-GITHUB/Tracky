@@ -71,9 +71,9 @@ export interface OrderStats {
 
 // Order form data for creating/updating orders
 export interface OrderFormData {
+  orderNumber: string;
   productName: string;
   productId: string;
-  dateOfDeparture: string;
   amount: number;
   sellerInfo: SellerInfo;
   shippingInfo?: Partial<ShippingInfo>;

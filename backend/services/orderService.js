@@ -183,7 +183,15 @@ class OrderService {
             _id: null,
             totalOrders: { $sum: 1 },
             totalAmount: { $sum: '$amount' },
-            totalReceivedAmount: { $sum: '$receivedAmount' },
+            totalReceivedAmount: { 
+              $sum: { 
+                $cond: [
+                  { $eq: ['$paymentSubstate.isPaid', true] },
+                  '$paymentSubstate.paidAmount',
+                  0
+                ]
+              }
+            },
             pendingOrders: {
               $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
             },

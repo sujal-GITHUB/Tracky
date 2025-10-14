@@ -90,7 +90,10 @@ const calculateOrderStats = (orders) => {
 
   orders.forEach(order => {
     stats.totalAmount += order.amount;
-    stats.totalReceivedAmount += order.receivedAmount || 0;
+    // Only include amounts that have been explicitly marked as paid
+    if (order.paymentSubstate && order.paymentSubstate.isPaid) {
+      stats.totalReceivedAmount += order.paymentSubstate.paidAmount || 0;
+    }
     
     if (!stats.statusCounts[order.status]) {
       stats.statusCounts[order.status] = 0;

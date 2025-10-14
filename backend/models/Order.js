@@ -210,7 +210,15 @@ orderSchema.statics.getOrderStats = function(sellerId) {
         _id: '$status',
         count: { $sum: 1 },
         totalAmount: { $sum: '$amount' },
-        totalReceivedAmount: { $sum: '$receivedAmount' }
+        totalReceivedAmount: { 
+          $sum: { 
+            $cond: [
+              { $eq: ['$paymentSubstate.isPaid', true] },
+              '$paymentSubstate.paidAmount',
+              0
+            ]
+          }
+        }
       }
     }
   ]);

@@ -18,21 +18,21 @@ export default function CreateOrderPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState<OrderFormData>({
-    productName: '',
-    productId: '',
-    dateOfDeparture: '',
-    amount: 0,
-    sellerInfo: {
-      sellerId: '',
-      sellerName: ''
-    },
-    paymentInfo: {
-      paymentMethod: 'cod',
-      paymentStatus: 'pending'
-    },
-    notes: ''
-  });
+   const [formData, setFormData] = useState<OrderFormData>({
+     orderNumber: '',
+     productName: '',
+     productId: '',
+     amount: 0,
+     sellerInfo: {
+       sellerId: 'admin_001',
+       sellerName: 'Admin Seller'
+     },
+     paymentInfo: {
+       paymentMethod: 'cod',
+       paymentStatus: 'pending'
+     },
+     notes: ''
+   });
 
   const handleInputChange = (field: string, value: any) => {
     if (field.includes('.')) {
@@ -52,12 +52,29 @@ export default function CreateOrderPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+   const handleSubmit = async (e: React.FormEvent) => {
+     e.preventDefault();
+     setLoading(true);
 
-    try {
-      const response = await orderAPI.createOrder(formData);
+     try {
+       // Validate required fields
+       if (!formData.orderNumber?.trim() || !formData.productName?.trim() || !formData.productId?.trim() || formData.amount <= 0) {
+         toast({
+           title: "Validation Error",
+           description: "Please fill in all required fields with valid values.",
+           variant: "destructive",
+         });
+         setLoading(false);
+         return;
+       }
+
+       // Prepare order data with current date
+       const orderData = {
+         ...formData,
+         dateOfDeparture: new Date().toISOString() // Use current date
+       };
+
+       const response = await orderAPI.createOrder(orderData);
       
       toast({
         title: "Order Created Successfully",
@@ -106,94 +123,56 @@ export default function CreateOrderPage() {
                 Enter the product details for this order
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="productName">Product Name *</Label>
-                <Input
-                  id="productName"
-                  value={formData.productName}
-                  onChange={(e) => handleInputChange('productName', e.target.value)}
-                  placeholder="Enter product name"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="productId">Product ID *</Label>
-                <Input
-                  id="productId"
-                  value={formData.productId}
-                  onChange={(e) => handleInputChange('productId', e.target.value)}
-                  placeholder="Enter product ID"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="amount">Amount (₹) *</Label>
-                <Input
-                  id="amount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={formData.amount}
-                  onChange={(e) => handleInputChange('amount', parseFloat(e.target.value) || 0)}
-                  placeholder="Enter order amount"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="dateOfDeparture">Date of Departure *</Label>
-                <Input
-                  id="dateOfDeparture"
-                  type="datetime-local"
-                  value={formData.dateOfDeparture}
-                  onChange={(e) => handleInputChange('dateOfDeparture', e.target.value)}
-                  required
-                />
-              </div>
-            </CardContent>
+             <CardContent className="space-y-4">
+               <div>
+                 <Label htmlFor="orderNumber">Order ID *</Label>
+                 <Input
+                   id="orderNumber"
+                   value={formData.orderNumber}
+                   onChange={(e) => handleInputChange('orderNumber', e.target.value)}
+                   placeholder="Enter order ID (e.g., ORD001)"
+                   required
+                 />
+               </div>
+               
+               <div>
+                 <Label htmlFor="productName">Product Name *</Label>
+                 <Input
+                   id="productName"
+                   value={formData.productName}
+                   onChange={(e) => handleInputChange('productName', e.target.value)}
+                   placeholder="Enter product name"
+                   required
+                 />
+               </div>
+               
+               <div>
+                 <Label htmlFor="productId">Product ID *</Label>
+                 <Input
+                   id="productId"
+                   value={formData.productId}
+                   onChange={(e) => handleInputChange('productId', e.target.value)}
+                   placeholder="Enter product ID"
+                   required
+                 />
+               </div>
+               
+               <div>
+                 <Label htmlFor="amount">Amount (₹) *</Label>
+                 <Input
+                   id="amount"
+                   type="number"
+                   min="0"
+                   step="0.01"
+                   value={formData.amount}
+                   onChange={(e) => handleInputChange('amount', parseFloat(e.target.value) || 0)}
+                   placeholder="Enter order amount"
+                   required
+                 />
+               </div>
+             </CardContent>
           </Card>
         </div>
-
-        {/* Seller Information */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <User className="h-5 w-5 mr-2" />
-              Seller Information
-            </CardTitle>
-            <CardDescription>
-              Enter seller details for this order
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="sellerId">Seller ID *</Label>
-                <Input
-                  id="sellerId"
-                  value={formData.sellerInfo?.sellerId || ''}
-                  onChange={(e) => handleInputChange('sellerInfo.sellerId', e.target.value)}
-                  placeholder="Enter seller ID"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="sellerName">Seller Name *</Label>
-                <Input
-                  id="sellerName"
-                  value={formData.sellerInfo?.sellerName || ''}
-                  onChange={(e) => handleInputChange('sellerInfo.sellerName', e.target.value)}
-                  placeholder="Enter seller name"
-                  required
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Payment Information */}
         <Card>
@@ -277,20 +256,24 @@ export default function CreateOrderPage() {
             <CardTitle>Order Summary</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Product:</span>
-                <span className="font-medium">{formData.productName || 'N/A'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Amount:</span>
-                <span className="font-medium">{formatPrice(formData.amount)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Payment:</span>
-                <span className="font-medium capitalize">{formData.paymentInfo?.paymentMethod || 'N/A'}</span>
-              </div>
-            </div>
+             <div className="space-y-2">
+               <div className="flex justify-between">
+                 <span className="text-gray-600 dark:text-gray-400">Order ID:</span>
+                 <span className="font-medium">{formData.orderNumber || 'N/A'}</span>
+               </div>
+               <div className="flex justify-between">
+                 <span className="text-gray-600 dark:text-gray-400">Product:</span>
+                 <span className="font-medium">{formData.productName || 'N/A'}</span>
+               </div>
+               <div className="flex justify-between">
+                 <span className="text-gray-600 dark:text-gray-400">Amount:</span>
+                 <span className="font-medium">{formatPrice(formData.amount)}</span>
+               </div>
+               <div className="flex justify-between">
+                 <span className="text-gray-600 dark:text-gray-400">Payment:</span>
+                 <span className="font-medium capitalize">{formData.paymentInfo?.paymentMethod || 'N/A'}</span>
+               </div>
+             </div>
           </CardContent>
         </Card>
 
