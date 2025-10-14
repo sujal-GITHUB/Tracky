@@ -421,7 +421,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                 <div>
                   <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Received Amount</Label>
                   <p className="text-lg font-medium text-green-600 dark:text-green-400">
-                    {formatPrice(order.receivedAmount)}
+                    {formatPrice(order.paymentSubstate?.paidAmount || 0)}
                   </p>
                   {(order.status === 'delivered' || order.status === 'cancelled') && (
                     <div className="flex gap-2 mt-2">
@@ -516,7 +516,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                   <div>
                     <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Payment Status</Label>
                     <p className="text-lg font-medium text-black dark:text-white capitalize">
-                      {order.paymentInfo.paymentStatus}
+                      {order.paymentSubstate?.isPaid ? 'Paid' : 'Unpaid'}
                     </p>
                   </div>
                   {order.paymentInfo.transactionId && (
@@ -608,7 +608,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                         size="sm"
                       >
                         <CheckCircle className="w-4 h-4 mr-2" />
-                        Mark as Delivered
+                        Delivered
                       </Button>
                       <Button
                         onClick={() => handleStatusToggle('cancelled')}
@@ -617,7 +617,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                         size="sm"
                       >
                         <XCircle className="w-4 h-4 mr-2" />
-                        Cancel Order
+                        Cancelled
                       </Button>
                     </>
                   )}
@@ -656,16 +656,10 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Received:</span>
                 <span className="font-medium text-green-600 dark:text-green-400">
-                  {formatPrice(order.receivedAmount)}
+                  {formatPrice(order.paymentSubstate?.paidAmount || 0)}
                 </span>
               </div>
               <hr className="border-gray-200 dark:border-gray-600" />
-              <div className="flex justify-between font-semibold">
-                <span>Outstanding:</span>
-                <span className="text-orange-600 dark:text-orange-400">
-                  {formatPrice(order.amount - order.receivedAmount)}
-                </span>
-              </div>
             </CardContent>
           </Card>
         </div>
@@ -742,7 +736,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                 disabled={updating}
                 className={pendingStatusChange === 'delivered' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
               >
-                {updating ? 'Updating...' : (pendingStatusChange === 'delivered' ? 'Mark as Delivered' : 'Cancel Order')}
+                {updating ? 'Updating...' : (pendingStatusChange === 'delivered' ? 'Delivered' : 'Cancelled')}
               </Button>
             </div>
           </div>
@@ -755,7 +749,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
           <div className="bg-white dark:bg-[#1a1a1a] rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
             <div className="mb-4">
               <h3 className="text-lg font-semibold text-black dark:text-white">
-                Mark Payment Received
+                Payment Received
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 Enter the amount that was actually received for this order.
@@ -768,12 +762,28 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                 <Input
                   id="paymentAmount"
                   type="number"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                  value={paymentAmount === 0 ? '' : paymentAmount}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const numValue = value === '' ? 0 : Number(value);
+                    setPaymentAmount(numValue);
+                  }}
+                  onFocus={(e) => {
+                    // Clear the field when focused if it's 0
+                    if (paymentAmount === 0) {
+                      e.target.value = '';
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // Set to 0 if field is empty on blur
+                    if (e.target.value === '') {
+                      setPaymentAmount(0);
+                    }
+                  }}
                   placeholder="Enter received amount"
                   min="0"
                   max={order?.amount || 0}
-                  step="0.01"
+                  step="any"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Order total: {formatPrice(order?.amount || 0)}
@@ -794,7 +804,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                 disabled={updating}
                 className="bg-green-600 hover:bg-green-700"
               >
-                {updating ? 'Processing...' : 'Mark Payment Received'}
+                {updating ? 'Processing...' : 'Payment Received'}
               </Button>
             </div>
           </div>

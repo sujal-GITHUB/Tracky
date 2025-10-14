@@ -50,8 +50,7 @@ export default function AnalyticsPage() {
 
       const response = await orderAPI.getOrderStatistics({
         from: startDate.toISOString(),
-        to: endDate.toISOString(),
-        sellerId: 'admin_001'
+        to: endDate.toISOString()
       });
 
       setStats(response.data.data);
@@ -78,8 +77,7 @@ export default function AnalyticsPage() {
   ];
 
   const revenueData = [
-    { name: 'Confirmed Revenue', amount: stats?.totalReceivedAmount || 0 },
-    { name: 'Outstanding', amount: (stats?.totalAmount || 0) - (stats?.totalReceivedAmount || 0) },
+    { name: 'Revenue', amount: stats?.totalReceivedAmount || 0 },
   ];
 
   const completionRate = stats?.totalOrders ? 
@@ -192,7 +190,7 @@ export default function AnalyticsPage() {
           <CardHeader>
             <CardTitle>Revenue Breakdown</CardTitle>
             <CardDescription>
-              Total vs received vs outstanding amounts
+              Confirmed revenue breakdown
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -286,12 +284,6 @@ export default function AnalyticsPage() {
               <span className="text-sm font-medium">Received Amount</span>
               <span className="text-sm font-bold text-green-600">
                 {formatPrice(stats?.totalReceivedAmount || 0)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Outstanding</span>
-              <span className="text-sm font-bold text-orange-600">
-                {formatPrice((stats?.totalAmount || 0) - (stats?.totalReceivedAmount || 0))}
               </span>
             </div>
             <div className="flex items-center justify-between">

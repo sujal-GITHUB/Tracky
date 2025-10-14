@@ -7,8 +7,8 @@ class OrderController {
       const orderData = {
         ...req.body,
         sellerInfo: {
-          sellerId: req.body.sellerInfo?.sellerId || 'demo_seller_123',
-          sellerName: req.body.sellerInfo?.sellerName || 'Demo Seller'
+          sellerId: 'admin',
+          sellerName: 'Admin'
         }
       };
 
@@ -27,10 +27,9 @@ class OrderController {
     }
   }
 
-  // Get all orders for a seller
+  // Get all orders
   static async getOrders(req, res) {
     try {
-      const sellerId = req.query.sellerId || 'demo_seller_123';
       const filters = {
         status: req.query.status,
         productId: req.query.productId,
@@ -40,7 +39,7 @@ class OrderController {
         skip: parseInt(req.query.skip) || 0
       };
 
-      const orders = await OrderService.getOrdersBySeller(sellerId, filters);
+      const orders = await OrderService.getAllOrders(filters);
       
       res.json({
         success: true,
@@ -60,9 +59,8 @@ class OrderController {
   static async getOrderById(req, res) {
     try {
       const { id } = req.params;
-      const sellerId = req.query.sellerId || 'demo_seller_123';
 
-      const order = await OrderService.getOrderById(id, sellerId);
+      const order = await OrderService.getOrderById(id);
       
       res.json({
         success: true,
@@ -82,9 +80,8 @@ class OrderController {
   static async getOrderByNumber(req, res) {
     try {
       const { orderNumber } = req.params;
-      const sellerId = req.query.sellerId || 'demo_seller_123';
 
-      const order = await OrderService.getOrderByNumber(orderNumber, sellerId);
+      const order = await OrderService.getOrderByNumber(orderNumber);
       
       res.json({
         success: true,
@@ -104,10 +101,9 @@ class OrderController {
   static async updateOrderStatus(req, res) {
     try {
       const { id } = req.params;
-      const sellerId = req.query.sellerId || 'demo_seller_123';
       const { status, ...additionalData } = req.body;
 
-      const order = await OrderService.updateOrderStatus(id, sellerId, status, additionalData);
+      const order = await OrderService.updateOrderStatus(id, status, additionalData);
       
       res.json({
         success: true,
@@ -127,10 +123,9 @@ class OrderController {
   static async updateOrder(req, res) {
     try {
       const { id } = req.params;
-      const sellerId = req.query.sellerId || 'demo_seller_123';
       const updateData = req.body;
 
-      const order = await OrderService.updateOrder(id, sellerId, updateData);
+      const order = await OrderService.updateOrder(id, updateData);
       
       res.json({
         success: true,
@@ -146,14 +141,13 @@ class OrderController {
     }
   }
 
-  // Delete order (soft delete)
+  // Delete order (permanent deletion)
   static async deleteOrder(req, res) {
     try {
       const { id } = req.params;
-      const sellerId = req.query.sellerId || 'demo_seller_123';
       const { reason } = req.body;
 
-      const order = await OrderService.deleteOrder(id, sellerId, reason);
+      const order = await OrderService.deleteOrder(id, reason);
       
       res.json({
         success: true,
@@ -172,13 +166,12 @@ class OrderController {
   // Get order statistics
   static async getOrderStatistics(req, res) {
     try {
-      const sellerId = req.query.sellerId || 'demo_seller_123';
       const dateRange = {
         from: req.query.dateFrom,
         to: req.query.dateTo
       };
 
-      const stats = await OrderService.getOrderStatistics(sellerId, dateRange);
+      const stats = await OrderService.getOrderStatistics(dateRange);
       
       res.json({
         success: true,
@@ -196,10 +189,9 @@ class OrderController {
   // Search orders
   static async searchOrders(req, res) {
     try {
-      const sellerId = req.query.sellerId || 'demo_seller_123';
       const { q } = req.query;
 
-      const orders = await OrderService.searchOrders(sellerId, q);
+      const orders = await OrderService.searchOrders(q);
       
       res.json({
         success: true,
@@ -219,10 +211,9 @@ class OrderController {
   // Get orders by status
   static async getOrdersByStatus(req, res) {
     try {
-      const sellerId = req.query.sellerId || 'demo_seller_123';
       const { status } = req.params;
 
-      const orders = await OrderService.getOrdersByStatus(sellerId, status);
+      const orders = await OrderService.getOrdersByStatus(status);
       
       res.json({
         success: true,
@@ -241,7 +232,6 @@ class OrderController {
   // Bulk update orders
   static async bulkUpdateOrders(req, res) {
     try {
-      const sellerId = req.query.sellerId || 'demo_seller_123';
       const { orderIds, updateData } = req.body;
 
       if (!Array.isArray(orderIds) || orderIds.length === 0) {
@@ -251,7 +241,7 @@ class OrderController {
         });
       }
 
-      const result = await OrderService.bulkUpdateOrders(orderIds, sellerId, updateData);
+      const result = await OrderService.bulkUpdateOrders(orderIds, updateData);
       
       res.json({
         success: true,
@@ -272,7 +262,6 @@ class OrderController {
   // Get recent orders (last 7 days)
   static async getRecentOrders(req, res) {
     try {
-      const sellerId = req.query.sellerId || 'demo_seller_123';
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
@@ -282,7 +271,7 @@ class OrderController {
         limit: parseInt(req.query.limit) || 20
       };
 
-      const orders = await OrderService.getOrdersBySeller(sellerId, filters);
+      const orders = await OrderService.getAllOrders(filters);
       
       res.json({
         success: true,
@@ -301,11 +290,10 @@ class OrderController {
   // Toggle payment status for delivered/cancelled orders
   static async togglePaymentStatus(req, res) {
     try {
-      const sellerId = req.query.sellerId || 'demo_seller_123';
       const { id } = req.params;
       const { receivedAmount } = req.body;
 
-      const order = await OrderService.togglePaymentStatus(id, sellerId, receivedAmount);
+      const order = await OrderService.togglePaymentStatus(id, receivedAmount);
       
       res.json({
         success: true,

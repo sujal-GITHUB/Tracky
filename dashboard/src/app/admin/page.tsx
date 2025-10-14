@@ -27,8 +27,8 @@ export default function AdminDashboard() {
     const fetchDashboardData = async () => {
       try {
         const [statsResponse, recentOrdersResponse] = await Promise.all([
-          orderAPI.getOrderStatistics({ sellerId: 'admin_001' }),
-          orderAPI.getRecentOrders(5, 'admin_001')
+          orderAPI.getOrderStatistics(),
+          orderAPI.getRecentOrders(5)
         ]);
 
         setStats(statsResponse.data.data);
@@ -64,7 +64,7 @@ export default function AdminDashboard() {
       color: 'bg-blue-500',
     },
     {
-      name: 'Confirmed Revenue',
+      name: 'Revenue',
       value: formatPrice(stats?.totalReceivedAmount || 0),
       icon: DollarSign,
       color: 'bg-green-500',

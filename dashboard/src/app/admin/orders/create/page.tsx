@@ -163,9 +163,26 @@ export default function CreateOrderPage() {
                    id="amount"
                    type="number"
                    min="0"
-                   step="0.01"
-                   value={formData.amount}
-                   onChange={(e) => handleInputChange('amount', parseFloat(e.target.value) || 0)}
+                   step="any"
+                   value={formData.amount === 0 ? '' : formData.amount}
+                   onChange={(e) => {
+                     const value = e.target.value;
+                     // Clear field when user starts typing if it's currently 0
+                     const numValue = value === '' ? 0 : Number(value);
+                     handleInputChange('amount', numValue);
+                   }}
+                   onFocus={(e) => {
+                     // Clear the field when focused if it's 0
+                     if (formData.amount === 0) {
+                       e.target.value = '';
+                     }
+                   }}
+                   onBlur={(e) => {
+                     // Set to 0 if field is empty on blur
+                     if (e.target.value === '') {
+                       handleInputChange('amount', 0);
+                     }
+                   }}
                    placeholder="Enter order amount"
                    required
                  />

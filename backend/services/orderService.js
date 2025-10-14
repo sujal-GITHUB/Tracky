@@ -12,10 +12,10 @@ class OrderService {
     }
   }
 
-  // Get all orders for a seller
-  static async getOrdersBySeller(sellerId, filters = {}) {
+  // Get all orders
+  static async getAllOrders(filters = {}) {
     try {
-      const query = { 'sellerInfo.sellerId': sellerId };
+      const query = {};
       
       // Apply filters
       if (filters.status) {
@@ -43,17 +43,14 @@ class OrderService {
   }
 
   // Get order by ID
-  static async getOrderById(orderId, sellerId) {
+  static async getOrderById(orderId) {
     try {
-      const order = await Order.findOne({
-        _id: orderId,
-        'sellerInfo.sellerId': sellerId
-      });
-
+      const order = await Order.findById(orderId);
+      
       if (!order) {
         throw new Error('Order not found');
       }
-
+      
       return order;
     } catch (error) {
       throw new Error(`Failed to fetch order: ${error.message}`);
@@ -61,11 +58,10 @@ class OrderService {
   }
 
   // Get order by order number
-  static async getOrderByNumber(orderNumber, sellerId) {
+  static async getOrderByNumber(orderNumber) {
     try {
       const order = await Order.findOne({
-        orderNumber: orderNumber,
-        'sellerInfo.sellerId': sellerId
+        orderNumber: orderNumber
       });
 
       if (!order) {
@@ -79,7 +75,7 @@ class OrderService {
   }
 
   // Update order status
-  static async updateOrderStatus(orderId, sellerId, newStatus, additionalData = {}) {
+  static async updateOrderStatus(orderId, newStatus, additionalData = {}) {
     try {
       const updateData = { status: newStatus };
 
@@ -105,8 +101,8 @@ class OrderService {
           break;
       }
 
-      const order = await Order.findOneAndUpdate(
-        { _id: orderId, 'sellerInfo.sellerId': sellerId },
+      const order = await Order.findByIdAndUpdate(
+        orderId,
         updateData,
         { new: true, runValidators: true }
       );
@@ -122,10 +118,10 @@ class OrderService {
   }
 
   // Update order details
-  static async updateOrder(orderId, sellerId, updateData) {
+  static async updateOrder(orderId, updateData) {
     try {
-      const order = await Order.findOneAndUpdate(
-        { _id: orderId, 'sellerInfo.sellerId': sellerId },
+      const order = await Order.findByIdAndUpdate(
+        orderId,
         updateData,
         { new: true, runValidators: true }
       );
@@ -140,19 +136,10 @@ class OrderService {
     }
   }
 
-  // Delete order (soft delete by marking as cancelled)
-  static async deleteOrder(orderId, sellerId, reason = 'Deleted by seller') {
+  // Delete order (permanently removes from database)
+  static async deleteOrder(orderId, reason = 'Deleted by admin') {
     try {
-      const order = await Order.findOneAndUpdate(
-        { _id: orderId, 'sellerInfo.sellerId': sellerId },
-        {
-          status: 'cancelled',
-          cancellationReason: reason,
-          cancelledBy: 'seller',
-          cancelledAt: new Date()
-        },
-        { new: true }
-      );
+      const order = await Order.findByIdAndDelete(orderId);
 
       if (!order) {
         throw new Error('Order not found');
@@ -165,9 +152,9 @@ class OrderService {
   }
 
   // Get order statistics for a seller
-  static async getOrderStatistics(sellerId, dateRange = {}) {
+  static async getOrderStatistics(dateRange = {}) {
     try {
-      const matchQuery = { 'sellerInfo.sellerId': sellerId };
+      const matchQuery = {};
       
       if (dateRange.from && dateRange.to) {
         matchQuery.createdAt = {
@@ -309,10 +296,9 @@ class OrderService {
   }
 
   // Search orders
-  static async searchOrders(sellerId, searchQuery) {
+  static async searchOrders(searchQuery) {
     try {
       const query = {
-        'sellerInfo.sellerId': sellerId,
         $or: [
           { orderNumber: { $regex: searchQuery, $options: 'i' } },
           { productName: { $regex: searchQuery, $options: 'i' } },
@@ -328,10 +314,9 @@ class OrderService {
   }
 
   // Get orders by status
-  static async getOrdersByStatus(sellerId, status) {
+  static async getOrdersByStatus(status) {
     try {
       const orders = await Order.find({
-        'sellerInfo.sellerId': sellerId,
         status: status
       }).sort({ createdAt: -1 });
 
@@ -342,12 +327,11 @@ class OrderService {
   }
 
   // Bulk update orders
-  static async bulkUpdateOrders(orderIds, sellerId, updateData) {
+  static async bulkUpdateOrders(orderIds, updateData) {
     try {
       const result = await Order.updateMany(
         { 
-          _id: { $in: orderIds },
-          'sellerInfo.sellerId': sellerId 
+          _id: { $in: orderIds }
         },
         updateData
       );
@@ -359,21 +343,21 @@ class OrderService {
   }
 
   // Toggle payment status for delivered/cancelled orders
-  static async togglePaymentStatus(orderId, sellerId, receivedAmount) {
+  static async togglePaymentStatus(orderId, receivedAmount) {
     try {
-      const order = await Order.findOne({
-        _id: orderId,
-        'sellerInfo.sellerId': sellerId,
-        status: { $in: ['delivered', 'cancelled'] }
-      });
+      const order = await Order.findById(orderId);
 
       if (!order) {
-        throw new Error('Order not found or not eligible for payment status update');
+        throw new Error('Order not found');
       }
 
-      // Update the received amount
-      order.receivedAmount = receivedAmount || 0;
-      await order.save();
+      // Check if order is in delivered or cancelled state
+      if (order.status !== 'delivered' && order.status !== 'cancelled') {
+        throw new Error('Payment can only be marked for delivered or cancelled orders');
+      }
+
+      // Use the model's markPaymentReceived method
+      await order.markPaymentReceived(receivedAmount || 0);
 
       return order;
     } catch (error) {

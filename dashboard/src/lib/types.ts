@@ -28,6 +28,14 @@ export interface PaymentInfo {
   transactionId?: string;
 }
 
+export interface PaymentSubstate {
+  isPaid: boolean;
+  paidAmount: number;
+  paymentDate?: string;
+  paymentMethod?: string;
+  paymentReference?: string;
+}
+
 // Order types matching backend model
 export interface Order {
   _id: string;
@@ -41,6 +49,7 @@ export interface Order {
   sellerInfo: SellerInfo;
   shippingInfo?: ShippingInfo;
   paymentInfo?: PaymentInfo;
+  paymentSubstate?: PaymentSubstate;
   notes?: string;
   cancellationReason?: string;
   cancelledBy?: 'customer' | 'seller' | 'admin';
@@ -67,6 +76,7 @@ export interface OrderStats {
   deliveredWithoutPayment: number;
   cancelledWithPayment: number;
   cancelledWithoutPayment: number;
+  averageOrderValue: number;
 }
 
 // Order form data for creating/updating orders
