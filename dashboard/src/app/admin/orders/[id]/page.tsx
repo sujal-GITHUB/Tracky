@@ -749,6 +749,58 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
         </div>
       )}
 
+      {/* Payment Amount Dialog */}
+      {showPaymentAmountDialog && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-black dark:text-white">
+                Mark Payment Received
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Enter the amount that was actually received for this order.
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="paymentAmount">Payment Amount</Label>
+                <Input
+                  id="paymentAmount"
+                  type="number"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(Number(e.target.value))}
+                  placeholder="Enter received amount"
+                  min="0"
+                  max={order?.amount || 0}
+                  step="0.01"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Order total: {formatPrice(order?.amount || 0)}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowPaymentAmountDialog(false)}
+                disabled={updating}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmPayment}
+                disabled={updating}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {updating ? 'Processing...' : 'Mark Payment Received'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirmDialog && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
