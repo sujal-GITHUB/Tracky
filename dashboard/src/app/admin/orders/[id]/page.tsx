@@ -28,6 +28,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
   const [updating, setUpdating] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [showPaymentAmountDialog, setShowPaymentAmountDialog] = useState(false);
+  const [showDeleteConfirmDialog, setShowDeleteConfirmDialog] = useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<string | null>(null);
   const [paymentReceived, setPaymentReceived] = useState(false);
   const [receivedAmount, setReceivedAmount] = useState(0);
@@ -239,10 +240,6 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
   const handleDeleteOrder = async () => {
     if (!order) return;
 
-    if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
-      return;
-    }
-
     setUpdating(true);
     try {
       await orderAPI.deleteOrder(order._id, 'Deleted by admin');
@@ -252,7 +249,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
         description: "Order has been successfully deleted",
         variant: "default",
       });
-
+      
       router.push('/admin/orders');
     } catch (error: any) {
       console.error('Failed to delete order:', error);
@@ -263,7 +260,12 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
       });
     } finally {
       setUpdating(false);
+      setShowDeleteConfirmDialog(false);
     }
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirmDialog(true);
   };
 
   if (loading) {
@@ -308,7 +310,7 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
           </div>
         </div>
         <div className="flex space-x-2">
-          <Button variant="destructive" onClick={handleDeleteOrder} disabled={updating}>
+          <Button variant="destructive" onClick={handleDeleteClick} disabled={updating}>
             <Trash2 className="h-4 w-4 mr-2" />
             Delete Order
           </Button>
@@ -619,27 +621,10 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                       </Button>
                     </>
                   )}
-                  {order.status === 'delivered' && (
-                    <Button
-                      onClick={() => handleStatusToggle('pending')}
-                      disabled={updating}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Package className="w-4 h-4 mr-2" />
-                      Revert to Pending
-                    </Button>
-                  )}
-                  {order.status === 'cancelled' && (
-                    <Button
-                      onClick={() => handleStatusToggle('pending')}
-                      disabled={updating}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <Package className="w-4 h-4 mr-2" />
-                      Revert to Pending
-                    </Button>
+                  {(order.status === 'delivered' || order.status === 'cancelled') && (
+                    <div className="text-sm text-gray-500 dark:text-gray-400 italic">
+                      Status cannot be changed once order is {order.status}
+                    </div>
                   )}
                 </div>
               </div>
@@ -758,6 +743,39 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
                 className={pendingStatusChange === 'delivered' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
               >
                 {updating ? 'Updating...' : (pendingStatusChange === 'delivered' ? 'Mark as Delivered' : 'Cancel Order')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirmDialog && (
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+          <div className="bg-white dark:bg-[#1a1a1a] rounded-lg shadow-lg p-6 w-full max-w-md mx-4">
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-black dark:text-white">
+                Delete Order
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Are you sure you want to delete this order? This action cannot be undone.
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-2 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirmDialog(false)}
+                disabled={updating}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteOrder}
+                disabled={updating}
+              >
+                {updating ? 'Deleting...' : 'Delete Order'}
               </Button>
             </div>
           </div>
