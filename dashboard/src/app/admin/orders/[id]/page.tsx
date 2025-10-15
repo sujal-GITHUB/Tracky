@@ -15,9 +15,9 @@ import { formatPrice, formatDate, getStatusBadgeColor, getOrderStatusIcon } from
 import { useToast } from '@/hooks/use-toast';
 
 interface OrderDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function OrderDetailPage({ params }: OrderDetailPageProps) {
