@@ -1,4 +1,5 @@
 const OrderService = require('../services/orderService');
+const AnalyticsService = require('../services/analyticsService');
 
 class OrderController {
   // Create a new order
@@ -12,7 +13,19 @@ class OrderController {
         }
       };
 
+      // Handle invoice file if uploaded
+      if (req.file) {
+        orderData.invoicePath = req.file.path;
+        orderData.invoiceFileName = req.file.originalname;
+        orderData.invoiceUploadedAt = new Date();
+      }
+
       const order = await OrderService.createOrder(orderData);
+      
+      // Update analytics for the month (async, don't wait)
+      AnalyticsService.updateAnalyticsForOrder(order).catch(err => {
+        console.error('Failed to update analytics:', err);
+      });
       
       res.status(201).json({
         success: true,
@@ -104,6 +117,11 @@ class OrderController {
       const { status, ...additionalData } = req.body;
 
       const order = await OrderService.updateOrderStatus(id, status, additionalData);
+      
+      // Update analytics for the month (async, don't wait)
+      AnalyticsService.updateAnalyticsForOrder(order).catch(err => {
+        console.error('Failed to update analytics:', err);
+      });
       
       res.json({
         success: true,

@@ -123,6 +123,17 @@ const orderSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
+  invoicePath: {
+    type: String,
+    trim: true
+  },
+  invoiceFileName: {
+    type: String,
+    trim: true
+  },
+  invoiceUploadedAt: {
+    type: Date
+  },
   cancellationReason: {
     type: String,
     trim: true

@@ -1,5 +1,6 @@
 const express = require('express');
 const OrderController = require('../controllers/orderController');
+const upload = require('../middlewares/upload');
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ router.get('/health', (req, res) => {
 
 // Order CRUD operations
 router.post('/',
+  upload.single('invoice'),
   OrderController.createOrder
 );
 

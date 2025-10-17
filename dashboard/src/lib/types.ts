@@ -51,6 +51,9 @@ export interface Order {
   paymentInfo?: PaymentInfo;
   paymentSubstate?: PaymentSubstate;
   notes?: string;
+  invoicePath?: string;
+  invoiceFileName?: string;
+  invoiceUploadedAt?: string;
   cancellationReason?: string;
   cancelledBy?: 'customer' | 'seller' | 'admin';
   cancelledAt?: string;
@@ -161,6 +164,61 @@ export interface AuthResponse {
     token: string;
     user: User;
   };
+}
+
+// Monthly Analytics types
+export interface MonthlyAnalytics {
+  _id: string;
+  year: number;
+  month: number;
+  totalOrders: number;
+  totalRevenue: number;
+  totalReceivedAmount: number;
+  pendingOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  ordersByType: {
+    cod: number;
+    online: number;
+    wallet: number;
+  };
+  revenueByType: {
+    cod: number;
+    online: number;
+    wallet: number;
+  };
+  averageOrderValue: number;
+  completionRate: number;
+  cancellationRate: number;
+  paymentStats: {
+    paidOrders: number;
+    unpaidOrders: number;
+    paidAmount: number;
+    unpaidAmount: number;
+  };
+  topProducts: Array<{
+    productId: string;
+    productName: string;
+    orderCount: number;
+    totalRevenue: number;
+  }>;
+  lastUpdated: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface YearlyAnalytics {
+  year: number;
+  totalOrders: number;
+  totalRevenue: number;
+  totalReceivedAmount: number;
+  pendingOrders: number;
+  deliveredOrders: number;
+  cancelledOrders: number;
+  averageOrderValue: number;
+  completionRate: number;
+  cancellationRate: number;
+  monthlyData: MonthlyAnalytics[];
 }
 
 // Utility types

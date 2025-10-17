@@ -18,6 +18,7 @@ export default function CreateOrderPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
    const [formData, setFormData] = useState<OrderFormData>({
      orderNumber: '',
      productName: '',
@@ -69,10 +70,15 @@ export default function CreateOrderPage() {
        }
 
        // Prepare order data with current date
-       const orderData = {
+       const orderData: any = {
          ...formData,
          dateOfDeparture: new Date().toISOString() // Use current date
        };
+
+       // Add invoice file if selected
+       if (invoiceFile) {
+         orderData.invoice = invoiceFile;
+       }
 
        const response = await orderAPI.createOrder(orderData);
       
@@ -253,7 +259,7 @@ export default function CreateOrderPage() {
               Add any additional notes or information
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div>
               <Label htmlFor="notes">Notes</Label>
               <Textarea
@@ -263,6 +269,45 @@ export default function CreateOrderPage() {
                 placeholder="Enter any additional notes..."
                 rows={3}
               />
+            </div>
+            
+            <div>
+              <Label htmlFor="invoice">Invoice PDF (Optional)</Label>
+              <Input
+                id="invoice"
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (file.type !== 'application/pdf') {
+                      toast({
+                        title: "Invalid File Type",
+                        description: "Please select a PDF file.",
+                        variant: "destructive",
+                      });
+                      e.target.value = '';
+                      return;
+                    }
+                    if (file.size > 10 * 1024 * 1024) {
+                      toast({
+                        title: "File Too Large",
+                        description: "File size must be less than 10MB.",
+                        variant: "destructive",
+                      });
+                      e.target.value = '';
+                      return;
+                    }
+                    setInvoiceFile(file);
+                  }
+                }}
+                className="cursor-pointer"
+              />
+              {invoiceFile && (
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  Selected: {invoiceFile.name} ({(invoiceFile.size / 1024).toFixed(2)} KB)
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
