@@ -52,22 +52,21 @@ export default function AdminLayout({
         "fixed inset-0 flex z-40 md:hidden",
         sidebarOpen ? "block" : "hidden"
       )}>
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
-        <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white dark:bg-[#1a1a1a]">
-          <div className="absolute top-0 right-0 -mr-12 pt-2">
+        <div className="relative flex-1 flex flex-col w-full bg-white dark:bg-[#1a1a1a] shadow-xl">
+          <div className="absolute top-0 right-4 pt-4">
             <button
-              className="ml-1 flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+              className="flex items-center justify-center h-10 w-10 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gray-500 dark:ring-gray-400 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white"
               onClick={() => setSidebarOpen(false)}
             >
-              <X className="h-6 w-6 text-white" />
+              <X className="h-6 w-6" />
             </button>
           </div>
           <div className="flex-1 h-0 pt-5 pb-4 overflow-y-auto">
-            <div className="flex-shrink-0 flex items-center justify-between px-4">
-              <h1 className="text-xl font-bold text-black dark:text-white ">Tracky Admin</h1>
+            <div className="flex-shrink-0 flex items-center justify-between px-4 mb-4">
+              <h1 className="text-xl font-bold text-black dark:text-white">Tracky Admin</h1>
               <button
                 onClick={toggleDarkMode}
-                className="p-2 rounded-md text-black dark:text-white transition-colors"
+                className="p-2 px-20 rounded-md text-black dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
                 {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </button>
@@ -79,6 +78,7 @@ export default function AdminLayout({
                   <Link
                     key={item.name}
                     href={item.href}
+                    onClick={() => setSidebarOpen(false)}
                     className={cn(
                       "group flex items-center px-2 py-2 text-base font-medium rounded-md transition-colors",
                       isActive
@@ -92,6 +92,15 @@ export default function AdminLayout({
                 );
               })}
             </nav>
+          </div>
+          <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-4">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center px-2 py-2 text-base font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+            >
+              <LogOut className="mr-4 h-6 w-6" />
+              Logout
+            </button>
           </div>
         </div>
       </div>
@@ -162,8 +171,24 @@ export default function AdminLayout({
                 })}
               </nav>
             </div>
-            <div className="flex-shrink-0 flex border-t justify-center border-gray-300 dark:border-gray-500 p-4">
-              Tracky
+            <div className="flex-shrink-0 border-t border-gray-300 dark:border-gray-500 p-4">
+              {sidebarCollapsed ? (
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                >
+                  <LogOut className="mr-3 h-5 w-5" />
+                  Logout
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -171,13 +196,17 @@ export default function AdminLayout({
 
       {/* Main content */}
       <div className="flex flex-col w-0 flex-1 overflow-hidden">
-        <div className="md:hidden pl-1 pt-1 sm:pl-3 sm:pt-3">
+        {/* Mobile header */}
+        <div className="md:hidden sticky top-0 z-10 flex-shrink-0 flex h-16 bg-white dark:bg-[#1a1a1a] border-b border-gray-200 dark:border-gray-700 shadow-sm">
           <button
-            className="-ml-0.5 -mt-0.5 h-12 w-12 inline-flex items-center justify-center rounded-md text-gray-500 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+            className="px-4 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
           </button>
+          <div className="flex-1 flex items-center px-4">
+            <h1 className="text-lg font-semibold text-black dark:text-white">Tracky</h1>
+          </div>
         </div>
         <main className="flex-1 relative overflow-y-auto focus:outline-none bg-gray-50 dark:bg-black">
           <div className="py-6">
