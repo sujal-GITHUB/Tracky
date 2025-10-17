@@ -145,6 +145,11 @@ class OrderController {
 
       const order = await OrderService.updateOrder(id, updateData);
       
+      // Update analytics for the month (async, don't wait)
+      AnalyticsService.updateAnalyticsForOrder(order).catch(err => {
+        console.error('Failed to update analytics:', err);
+      });
+      
       res.json({
         success: true,
         message: 'Order updated successfully',
@@ -166,6 +171,13 @@ class OrderController {
       const { reason } = req.body;
 
       const order = await OrderService.deleteOrder(id, reason);
+      
+      // Update analytics after deletion (async, don't wait)
+      if (order) {
+        AnalyticsService.updateAnalyticsForOrder(order).catch(err => {
+          console.error('Failed to update analytics after deletion:', err);
+        });
+      }
       
       res.json({
         success: true,
@@ -312,6 +324,11 @@ class OrderController {
       const { receivedAmount } = req.body;
 
       const order = await OrderService.togglePaymentStatus(id, receivedAmount);
+      
+      // Update analytics for the month (async, don't wait)
+      AnalyticsService.updateAnalyticsForOrder(order).catch(err => {
+        console.error('Failed to update analytics:', err);
+      });
       
       res.json({
         success: true,

@@ -45,14 +45,29 @@ export default function AnalyticsPage() {
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>(new Date().getMonth() + 1);
   const [loading, setLoading] = useState(true);
   const [yearlyAnalytics, setYearlyAnalytics] = useState<YearlyAnalytics | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   useEffect(() => {
     fetchAnalytics();
   }, [selectedYear, selectedMonth]);
 
-  const fetchAnalytics = async () => {
+  // Auto-refresh effect
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const interval = setInterval(() => {
+      fetchAnalytics(true); // Silent refresh
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [selectedYear, selectedMonth, autoRefresh]);
+
+  const fetchAnalytics = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) {
+        setLoading(true);
+      }
       
       if (selectedMonth === 'all') {
         // Fetch yearly analytics
@@ -65,15 +80,21 @@ export default function AnalyticsPage() {
         setMonthlyData([response.data.data]);
         setYearlyAnalytics(null);
       }
+      
+      setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to fetch analytics:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch analytics data. Please try again.",
-        variant: "destructive",
-      });
+      if (!silent) {
+        toast({
+          title: "Error",
+          description: "Failed to fetch analytics data. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
@@ -164,6 +185,16 @@ export default function AnalyticsPage() {
           <h1 className="text-2xl font-bold text-black dark:text-white">Analytics Dashboard</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             Track your order performance and business metrics
+            {lastUpdated && (
+              <span className="ml-2">
+                • Last updated: {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+            {autoRefresh && (
+              <span className="ml-2 text-green-600 dark:text-green-400">
+                • Auto-refresh enabled
+              </span>
+            )}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -189,6 +220,25 @@ export default function AnalyticsPage() {
               ))}
             </SelectContent>
           </Select>
+          
+          <Button 
+            onClick={() => setAutoRefresh(!autoRefresh)} 
+            variant={autoRefresh ? "default" : "outline"} 
+            size="sm"
+            title={autoRefresh ? "Disable auto-refresh" : "Enable auto-refresh"}
+          >
+            {autoRefresh ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-pulse" />
+                Auto
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Manual
+              </>
+            )}
+          </Button>
           
           <Button onClick={handleRecalculate} variant="outline" size="sm" disabled={loading}>
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
