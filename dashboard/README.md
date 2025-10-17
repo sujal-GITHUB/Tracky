@@ -94,7 +94,7 @@ dashboard/
 3. **Set up environment variables**
    ```bash
    # Create .env.local file
-   echo "NEXT_PUBLIC_API_URL=http://localhost:5000/api/orders" > .env.local
+   echo "NEXT_PUBLIC_API_URL=http://localhost:5000/api" > .env.local
    ```
 
 4. **Start development server**
@@ -215,7 +215,7 @@ npm start
 
 ### Environment Variables
 ```bash
-NEXT_PUBLIC_API_URL=https://your-backend-url.com/api/orders
+NEXT_PUBLIC_API_URL=https://your-backend-url.com/api
 ```
 
 ## 🤝 **Contributing**
